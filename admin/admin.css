@@ -1,0 +1,350 @@
+:root {
+    --bg: #0f1217;
+    --bg-elev: #171b22;
+    --line: #2a303a;
+    --text: #ebedf0;
+    --muted: #9ca3af;
+    --accent: #bb86fc;
+    --danger: #f87171;
+    --success: #34d399;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Montserrat, sans-serif;
+    background: radial-gradient(circle at top right, #1c2230 0%, var(--bg) 45%);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+a {
+    color: var(--accent);
+}
+
+.admin-wrap {
+    max-width: 1024px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+}
+
+.admin-card {
+    background: color-mix(in srgb, var(--bg-elev) 92%, black 8%);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+
+.admin-title {
+    margin: 0 0 8px;
+    font-family: Oswald, sans-serif;
+    letter-spacing: 0.4px;
+    font-size: 34px;
+}
+
+.admin-subtitle {
+    margin: 0 0 20px;
+    color: var(--muted);
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.panel {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.panel h2 {
+    margin: 0 0 8px;
+    font-size: 18px;
+}
+
+.panel p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+label {
+    display: block;
+    margin: 0 0 8px;
+    color: var(--muted);
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #0c1015;
+    color: var(--text);
+    margin-bottom: 14px;
+}
+
+button,
+.button-link {
+    display: inline-block;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: var(--accent);
+    color: #1b1028;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+button:hover,
+.button-link:hover {
+    filter: brightness(1.06);
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    gap: 10px;
+}
+
+.flash {
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid;
+}
+
+.flash-error {
+    border-color: color-mix(in srgb, var(--danger) 60%, var(--line) 40%);
+    background: rgba(248, 113, 113, 0.08);
+    color: #fecaca;
+}
+
+.flash-success {
+    border-color: color-mix(in srgb, var(--success) 60%, var(--line) 40%);
+    background: rgba(52, 211, 153, 0.09);
+    color: #a7f3d0;
+}
+
+/* Services Table */
+.services-table-wrapper {
+    overflow-x: auto;
+}
+
+.services-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+}
+
+.services-table thead {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 2px solid var(--line);
+}
+
+.services-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.services-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+    color: var(--text);
+}
+
+.services-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Edit Form */
+.edit-form-container {
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.service-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.service-edit-form h3 {
+    margin: 0 0 10px;
+    color: var(--text);
+    font-size: 18px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+.form-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-col label {
+    margin-bottom: 6px;
+}
+
+.form-col input[type="text"],
+.form-col input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #0c1015;
+    color: var(--text);
+    font-family: Montserrat, sans-serif;
+}
+
+.form-col input[type="text"]:focus,
+.form-col input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.1);
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.button-primary {
+    flex: 1;
+    max-width: 150px;
+}
+
+.button-secondary {
+    display: inline-block;
+    padding: 10px 14px;
+    background: var(--line);
+    color: var(--text);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.button-secondary:hover {
+    background: color-mix(in srgb, var(--line) 100%, white 10%);
+}
+
+.button-edit {
+    display: inline-block;
+    padding: 6px 10px;
+    background: var(--accent);
+    color: #1b1028;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: filter 0.2s;
+}
+
+.button-edit:hover {
+    filter: brightness(1.1);
+}
+
+/* Toggle Checkbox */
+.toggle-form {
+    display: inline-block;
+}
+
+.checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-mark {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #0c1015;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.checkbox-label input[type="checkbox"]:checked ~ .checkbox-mark {
+    background: var(--success);
+    border-color: var(--success);
+}
+
+.checkbox-label input[type="checkbox"]:checked ~ .checkbox-mark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #0f1217;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.toggle-checkbox {
+    cursor: pointer;
+}
+
+@media (max-width: 760px) {
+    .admin-title {
+        font-size: 28px;
+    }
+
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .services-table {
+        font-size: 13px;
+    }
+
+    .services-table th,
+    .services-table td {
+        padding: 8px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .button-primary {
+        max-width: 100%;
+    }
+}

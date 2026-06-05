@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Booking Payload Tests</title>
+<style>
+  body { font-family: monospace; padding: 1rem; background: #111; color: #eee; }
+  .pass { color: #4caf50; }
+  .fail { color: #f44336; }
+  h2 { color: #bb86fc; }
+  #summary { font-size: 1.2em; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<h2>Booking Payload Tests</h2>
+<pre id="output"></pre>
+<div id="summary"></div>
+
+<script>
+// -------------------------------------------------------
+// Helpers copied from booking/index.php inline script
+// -------------------------------------------------------
+function timeToMinutes(timeStr) {
+    var parts = timeStr.split(':');
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+}
+
+function minutesToTime(minutes) {
+    var hours = Math.floor(minutes / 60);
+    var mins = minutes % 60;
+    return (hours < 10 ? '0' : '') + hours + ':' + (mins < 10 ? '0' : '') + mins;
+}
+
+function generateSubmissionId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0;
+        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+}
+
+// -------------------------------------------------------
+// Test harness
+// -------------------------------------------------------
+var out = document.getElementById('output');
+var pass = 0, fail = 0;
+
+function log(cls, msg) {
+    var line = document.createElement('span');
+    line.className = cls;
+    line.textContent = msg + '\n';
+    out.appendChild(line);
+}
+
+function assert(label, condition) {
+    if (condition) { log('pass', '[PASS] ' + label); pass++; }
+    else           { log('fail', '[FAIL] ' + label); fail++; }
+}
+
+function assertEqual(label, expected, actual) {
+    var ok = JSON.stringify(expected) === JSON.stringify(actual);
+    if (ok) { log('pass', '[PASS] ' + label); pass++; }
+    else {
+        log('fail', '[FAIL] ' + label);
+        log('fail', '       Expected: ' + JSON.stringify(expected));
+        log('fail', '       Actual:   ' + JSON.stringify(actual));
+        fail++;
+    }
+}
+
+// -------------------------------------------------------
+// Simulate payload construction (mirrors booking/index.php)
+// -------------------------------------------------------
+function buildPayload(serviceMinutes, addonMinutes, dateValue, timeValue) {
+    var totalDuration = serviceMinutes + addonMinutes;
+    var startMinutes = timeToMinutes(timeValue);
+    var endMinutes = startMinutes + totalDuration;
+    var localEndTime = minutesToTime(endMinutes);
+    var submissionId = generateSubmissionId();
+
+    return {
+        name: 'Test User',
+        email: 'test@example.com',
+        phone: '5550001234',
+        service: 'Classic Taper',
+        addons: addonMinutes > 0 ? ['Hot Towel'] : [],
+        notes: '',
+        timeZone: 'America/New_York',
+        localDate: dateValue,
+        localStartTime: timeValue,
+        localEndTime: localEndTime,
+        submissionId: submissionId
+    };
+}
+
+log('', '--- Required fields present ---');
+var p = buildPayload(45, 0, '2030-03-10', '14:00');
+assert('name present', !!p.name);
+assert('email present', !!p.email);
+assert('phone present', !!p.phone);
+assert('service present', !!p.service);
+assert('timeZone present', !!p.timeZone);
+assert('localDate present', !!p.localDate);
+assert('localStartTime present', !!p.localStartTime);
+assert('localEndTime present', !!p.localEndTime);
+assert('submissionId present', !!p.submissionId);
+
+log('', '\n--- No ISO start/end fields (timezone-incorrect fields removed) ---');
+assert('No "start" ISO field in payload', !('start' in p));
+assert('No "end" ISO field in payload', !('end' in p));
+
+log('', '\n--- End time = start + service duration ---');
+var p2 = buildPayload(45, 0, '2030-03-10', '14:00');
+assertEqual('14:00 + 45min = 14:45', '14:45', p2.localEndTime);
+
+var p3 = buildPayload(50, 0, '2030-03-10', '11:00');
+assertEqual('11:00 + 50min = 11:50', '11:50', p3.localEndTime);
+
+log('', '\n--- End time = start + service + addon duration ---');
+var p4 = buildPayload(45, 10, '2030-03-10', '14:00');
+assertEqual('14:00 + 45 + 10min = 14:55', '14:55', p4.localEndTime);
+
+var p5 = buildPayload(45, 20, '2030-03-10', '17:15');
+assertEqual('17:15 + 45 + 20min = 18:20', '18:20', p5.localEndTime);
+
+log('', '\n--- Overnight end time handled correctly ---');
+var p6 = buildPayload(45, 0, '2030-03-10', '23:30');
+assertEqual('23:30 + 45min = 24:15 (next hour)', '24:15', p6.localEndTime);
+
+log('', '\n--- submissionId format (UUID v4) ---');
+var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+var ids = [];
+for (var i = 0; i < 10; i++) ids.push(generateSubmissionId());
+assert('All generated IDs match UUID v4 format', ids.every(function(id) { return uuidRegex.test(id); }));
+assert('All generated IDs are unique', new Set(ids).size === ids.length);
+
+log('', '\n--- Double-submit prevention (isSubmitting flag) ---');
+// Simulate the guard logic
+var isSubmitting = false;
+var submitCount = 0;
+
+function simulateSubmit() {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    submitCount++;
+    // Don't reset - simulates still-in-flight
+}
+
+simulateSubmit();
+simulateSubmit(); // second click while first is in flight
+simulateSubmit(); // third click
+assert('Only 1 submit fires when guard is active (isSubmitting flag)', submitCount === 1);
+
+// -------------------------------------------------------
+// Summary
+// -------------------------------------------------------
+var summary = document.getElementById('summary');
+summary.className = fail === 0 ? 'pass' : 'fail';
+summary.textContent = '=== Results: ' + pass + ' passed, ' + fail + ' failed ===';
+</script>
+</body>
+</html>

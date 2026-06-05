@@ -1,0 +1,183 @@
+{
+    "meta": {
+        "version": 1,
+        "last_updated": "2026-03-18T06:41:07+00:00"
+    },
+    "services": [
+        {
+            "id": "classic-taper",
+            "name": "Classic Taper",
+            "price": 35,
+            "duration_minutes": 45,
+            "active": true,
+            "sort_order": 10
+        },
+        {
+            "id": "skin-fade",
+            "name": "Skin Fade",
+            "price": 35,
+            "duration_minutes": 50,
+            "active": true,
+            "sort_order": 20
+        },
+        {
+            "id": "clean-up",
+            "name": "Clean Up",
+            "price": 20,
+            "duration_minutes": 20,
+            "active": true,
+            "sort_order": 30
+        },
+        {
+            "id": "beard-sculpt-face-shave",
+            "name": "Beard Sculpt or Face Shave",
+            "price": 10,
+            "duration_minutes": 30,
+            "active": true,
+            "sort_order": 40
+        },
+        {
+            "id": "top-trim",
+            "name": "Top Trim",
+            "price": 5,
+            "duration_minutes": 20,
+            "active": true,
+            "sort_order": 50
+        },
+        {
+            "id": "wax-thread",
+            "name": "Wax/Thread",
+            "price": 10,
+            "duration_minutes": 20,
+            "active": true,
+            "sort_order": 60
+        },
+        {
+            "id": "perm",
+            "name": "Perm",
+            "price": 100,
+            "duration_minutes": 120,
+            "active": true,
+            "sort_order": 70
+        }
+    ],
+    "booking": {
+        "weekly_hours": {
+            "sunday": {
+                "enabled": true,
+                "shifts": [
+                    {
+                        "start": "10:00",
+                        "end": "17:30"
+                    },
+                    {
+                        "start": "18:30",
+                        "end": "21:30"
+                    }
+                ]
+            },
+            "monday": {
+                "enabled": true,
+                "shifts": [
+                    {
+                        "start": "14:30",
+                        "end": "17:30"
+                    },
+                    {
+                        "start": "18:30",
+                        "end": "21:30"
+                    }
+                ]
+            },
+            "tuesday": {
+                "enabled": true,
+                "shifts": [
+                    {
+                        "start": "10:00",
+                        "end": "17:30"
+                    },
+                    {
+                        "start": "18:30",
+                        "end": "21:30"
+                    }
+                ]
+            },
+            "wednesday": {
+                "enabled": true,
+                "shifts": [
+                    {
+                        "start": "14:30",
+                        "end": "17:30"
+                    },
+                    {
+                        "start": "18:30",
+                        "end": "21:30"
+                    }
+                ]
+            },
+            "thursday": {
+                "enabled": true,
+                "shifts": [
+                    {
+                        "start": "10:00",
+                        "end": "17:30"
+                    },
+                    {
+                        "start": "18:30",
+                        "end": "21:30"
+                    }
+                ]
+            },
+            "friday": {
+                "enabled": true,
+                "shifts": [
+                    {
+                        "start": "10:00",
+                        "end": "17:30"
+                    },
+                    {
+                        "start": "18:30",
+                        "end": "21:30"
+                    }
+                ]
+            },
+            "saturday": {
+                "enabled": true,
+                "shifts": [
+                    {
+                        "start": "10:00",
+                        "end": "17:30"
+                    },
+                    {
+                        "start": "18:30",
+                        "end": "21:30"
+                    }
+                ]
+            }
+        },
+        "blocked_dates": [],
+        "addons": [
+            {
+                "id": "top-trim-addon",
+                "name": "Top Trim",
+                "price": 5,
+                "duration_minutes": 20,
+                "active": true
+            },
+            {
+                "id": "wax-thread-addon",
+                "name": "Wax/Thread",
+                "price": 10,
+                "duration_minutes": 20,
+                "active": true
+            },
+            {
+                "id": "hot-towel-addon",
+                "name": "Hot Towel",
+                "price": 10,
+                "duration_minutes": 10,
+                "active": true
+            }
+        ]
+    }
+}

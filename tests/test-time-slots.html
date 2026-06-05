@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Time Slot Tests</title>
+<style>
+  body { font-family: monospace; padding: 1rem; background: #111; color: #eee; }
+  .pass { color: #4caf50; }
+  .fail { color: #f44336; }
+  h2 { color: #bb86fc; }
+  #summary { font-size: 1.2em; margin-top: 1rem; }
+</style>
+</head>
+<body>
+<h2>Time Slot Calculation Tests</h2>
+<pre id="output"></pre>
+<div id="summary"></div>
+
+<script>
+// -------------------------------------------------------
+// Paste of the slot functions from booking/index.php
+// (kept identical so tests verify the real logic)
+// -------------------------------------------------------
+function timeToMinutes(timeStr) {
+    var parts = timeStr.split(':');
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+}
+
+function minutesToTime(minutes) {
+    var hours = Math.floor(minutes / 60);
+    var mins = minutes % 60;
+    return (hours < 10 ? '0' : '') + hours + ':' + (mins < 10 ? '0' : '') + mins;
+}
+
+function getAvailableSlots(dateStr, serviceDuration, pastoBookingData) {
+    if (!pastoBookingData || !pastoBookingData.weeklyHours) return [];
+    if (pastoBookingData.blockedDates && pastoBookingData.blockedDates.indexOf(dateStr) !== -1) return [];
+
+    var date = new Date(dateStr + 'T00:00:00');
+    var dayOfWeek = date.getDay();
+    var dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    var dayName = dayNames[dayOfWeek];
+
+    var dayHours = pastoBookingData.weeklyHours[dayName];
+    if (!dayHours || !dayHours.enabled) return [];
+
+    var slots = [];
+    var shifts = dayHours.shifts || [];
+
+    shifts.forEach(function(shift) {
+        if (!shift.start || !shift.end) return;
+        var start = timeToMinutes(shift.start);
+        var end = timeToMinutes(shift.end);
+        for (var time = start; time + serviceDuration <= end; time += 15) {
+            slots.push(minutesToTime(time));
+        }
+    });
+
+    return slots;
+}
+
+// -------------------------------------------------------
+// Test harness
+// -------------------------------------------------------
+var out = document.getElementById('output');
+var pass = 0, fail = 0;
+
+function log(cls, msg) {
+    var line = document.createElement('span');
+    line.className = cls;
+    line.textContent = msg + '\n';
+    out.appendChild(line);
+}
+
+function assert(label, condition) {
+    if (condition) { log('pass', '[PASS] ' + label); pass++; }
+    else            { log('fail', '[FAIL] ' + label); fail++; }
+}
+
+function assertEqual(label, expected, actual) {
+    var ok = JSON.stringify(expected) === JSON.stringify(actual);
+    if (ok) { log('pass', '[PASS] ' + label); pass++; }
+    else {
+        log('fail', '[FAIL] ' + label);
+        log('fail', '       Expected: ' + JSON.stringify(expected));
+        log('fail', '       Actual:   ' + JSON.stringify(actual));
+        fail++;
+    }
+}
+
+// -------------------------------------------------------
+// Test data matching data/settings.json exactly
+// -------------------------------------------------------
+var bookingData = {
+    weeklyHours: {
+        sunday:    { enabled: true,  shifts: [{ start: '11:00', end: '18:00' }, { start: '19:00', end: '23:59' }] },
+        monday:    { enabled: true,  shifts: [{ start: '14:30', end: '18:00' }, { start: '19:00', end: '23:59' }] },
+        tuesday:   { enabled: true,  shifts: [{ start: '11:00', end: '18:00' }, { start: '19:00', end: '23:59' }] },
+        wednesday: { enabled: true,  shifts: [{ start: '14:30', end: '18:00' }, { start: '19:00', end: '23:59' }] },
+        thursday:  { enabled: true,  shifts: [{ start: '11:00', end: '18:00' }, { start: '19:00', end: '23:59' }] },
+        friday:    { enabled: true,  shifts: [{ start: '14:00', end: '18:00' }, { start: '19:00', end: '23:59' }] },
+        saturday:  { enabled: true,  shifts: [{ start: '11:00', end: '18:00' }, { start: '19:00', end: '23:59' }] }
+    },
+    blockedDates: ['2030-01-15'],
+    services: [
+        { name: 'Classic Taper', duration_minutes: 45 },
+        { name: 'Skin Fade',     duration_minutes: 50 },
+        { name: 'Perm',          duration_minutes: 120 }
+    ]
+};
+
+// Find a Sunday in test data
+// 2030-01-13 is a Sunday
+var sunday = '2030-01-13';
+var monday = '2030-01-14';
+
+log('', '--- Slot generation for Sunday (11:00-18:00, 19:00-23:59), 45-min service ---');
+var slots45 = getAvailableSlots(sunday, 45, bookingData);
+assert('First morning slot is 11:00', slots45[0] === '11:00');
+assert('Slots are 15-min apart (11:00→11:15)', slots45[1] === '11:15');
+
+// Last morning slot: shift ends 18:00, need +45min, so last start = 17:15
+var lastMorning = slots45.filter(function(s) { return timeToMinutes(s) < timeToMinutes('18:00'); });
+assert('Last morning slot is 17:15 (18:00 - 45min)', lastMorning[lastMorning.length - 1] === '17:15');
+
+// No gap slots between 18:00 and 19:00
+var gapSlots = slots45.filter(function(s) {
+    var m = timeToMinutes(s);
+    return m >= timeToMinutes('18:00') && m < timeToMinutes('19:00');
+});
+assert('No slots in 18:00-19:00 gap between shifts', gapSlots.length === 0);
+
+// Evening shift starts at 19:00
+var eveningSlots = slots45.filter(function(s) { return timeToMinutes(s) >= timeToMinutes('19:00'); });
+assert('First evening slot is 19:00', eveningSlots[0] === '19:00');
+
+// Last evening slot: 23:59 - 45min = 23:14
+assert('Last evening slot is 23:14', eveningSlots[eveningSlots.length - 1] === '23:14');
+
+log('', '\n--- Blocked date returns empty ---');
+assertEqual('Blocked date returns empty array', [], getAvailableSlots('2030-01-15', 45, bookingData));
+
+log('', '\n--- Disabled day returns empty ---');
+var disabledData = JSON.parse(JSON.stringify(bookingData));
+disabledData.weeklyHours.monday.enabled = false;
+assertEqual('Disabled day returns empty array', [], getAvailableSlots(monday, 45, disabledData));
+
+log('', '\n--- 120-min service (Perm) reduces available slots ---');
+var slotsPerm = getAvailableSlots(sunday, 120, bookingData);
+assert('Perm first slot is 11:00', slotsPerm[0] === '11:00');
+// Last morning slot: 18:00 - 120min = 16:00
+var lastPermMorning = slotsPerm.filter(function(s) { return timeToMinutes(s) < timeToMinutes('18:00'); });
+assert('Last morning Perm slot is 16:00', lastPermMorning[lastPermMorning.length - 1] === '16:00');
+// Last evening slot: 23:59 - 120min = 21:59
+var lastPermEvening = slotsPerm.filter(function(s) { return timeToMinutes(s) >= timeToMinutes('19:00'); });
+assert('Last evening Perm slot is 21:59', lastPermEvening[lastPermEvening.length - 1] === '21:59');
+
+log('', '\n--- 15-minute spacing verified ---');
+var spacings = [];
+for (var i = 1; i < Math.min(slots45.length, 5); i++) {
+    spacings.push(timeToMinutes(slots45[i]) - timeToMinutes(slots45[i-1]));
+}
+assert('First 4 slots are spaced 15 minutes apart', spacings.every(function(s) { return s === 15; }));
+
+log('', '\n--- Helper functions ---');
+assertEqual('timeToMinutes("11:00") = 660', 660, timeToMinutes('11:00'));
+assertEqual('timeToMinutes("23:59") = 1439', 1439, timeToMinutes('23:59'));
+assertEqual('minutesToTime(660) = "11:00"', '11:00', minutesToTime(660));
+assertEqual('minutesToTime(75) = "01:15"', '01:15', minutesToTime(75));
+
+// -------------------------------------------------------
+// Busy-slot filtering tests (mirrors logic in booking/index.php)
+// -------------------------------------------------------
+
+function slotOverlapsBusy(slotStart, duration, busyBlocks) {
+    var slotEnd = slotStart + duration;
+    for (var i = 0; i < busyBlocks.length; i++) {
+        var busyStart = timeToMinutes(busyBlocks[i].start);
+        var busyEnd   = timeToMinutes(busyBlocks[i].end);
+        if (slotStart < busyEnd && slotEnd > busyStart) return true;
+    }
+    return false;
+}
+
+function filterBusySlots(allSlots, duration, busyBlocks) {
+    return allSlots.filter(function(slot) {
+        return !slotOverlapsBusy(timeToMinutes(slot), duration, busyBlocks);
+    });
+}
+
+log('', '\n--- Busy-slot filtering ---');
+
+// 2pm booking exists on the calendar for 45 minutes
+var busyBlocks = [{ start: '14:00', end: '14:45' }];
+var allSundaySlots = getAvailableSlots(sunday, 45, bookingData);
+
+var filtered = filterBusySlots(allSundaySlots, 45, busyBlocks);
+assert('14:00 slot removed (exactly booked)', filtered.indexOf('14:00') === -1);
+assert('13:15 slot removed (would run into 14:00)', filtered.indexOf('13:15') === -1);
+assert('13:30 slot removed (would run into 14:15, overlaps 14:00-14:45 block)', filtered.indexOf('13:30') === -1);
+assert('14:45 slot present (starts exactly when busy block ends - no overlap)', filtered.indexOf('14:45') !== -1);
+assert('13:00 slot present (13:00+45=13:45, ends before 14:00)', filtered.indexOf('13:00') !== -1);
+
+log('', '\n--- Slot partially overlapping busy block is removed ---');
+// Slot at 13:45 would end at 14:30 (inside the 14:00-14:45 busy block)
+assert('13:45 slot removed (ends at 14:30, inside busy block)', filtered.indexOf('13:45') === -1);
+
+log('', '\n--- Multiple busy blocks ---');
+var twoBusy = [
+    { start: '11:30', end: '12:15' }, // 11:30-12:15
+    { start: '14:00', end: '14:45' }  // 14:00-14:45
+];
+var filteredTwo = filterBusySlots(allSundaySlots, 45, twoBusy);
+assert('11:00 slot removed (ends at 11:45, overlaps 11:30)', filteredTwo.indexOf('11:00') === -1);
+assert('11:30 slot removed (inside first busy block)', filteredTwo.indexOf('11:30') === -1);
+assert('12:15 slot present (starts exactly when first block ends)', filteredTwo.indexOf('12:15') !== -1);
+assert('14:00 slot removed (inside second busy block)', filteredTwo.indexOf('14:00') === -1);
+assert('14:45 slot present (starts exactly when second block ends)', filteredTwo.indexOf('14:45') !== -1);
+
+log('', '\n--- Fail-open: empty busy blocks shows all slots ---');
+var filteredEmpty = filterBusySlots(allSundaySlots, 45, []);
+assertEqual('Empty busy blocks: all slots preserved', allSundaySlots.length, filteredEmpty.length);
+
+// -------------------------------------------------------
+// Summary
+// -------------------------------------------------------
+var summary = document.getElementById('summary');
+summary.className = fail === 0 ? 'pass' : 'fail';
+summary.textContent = '=== Results: ' + pass + ' passed, ' + fail + ' failed ===';
+</script>
+</body>
+</html>
