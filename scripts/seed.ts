@@ -219,7 +219,7 @@ async function seedAvailabilityRules(payload: Awaited<ReturnType<typeof getPaylo
       console.log(`  [skip] availability rule for "${rule.day}" already exists`);
       continue;
     }
-    await payload.create({ collection: "availability-rules", data: rule });
+    await payload.create({ collection: "availability-rules", data: rule as any });
     console.log(`  [ok]   availability rule for "${rule.day}" created`);
   }
 }

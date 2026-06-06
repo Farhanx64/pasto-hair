@@ -5,8 +5,8 @@ import type { WeeklyAvailability, BookingRequest } from "@/src/lib/booking/types
 import { generateSlots } from "@/src/lib/booking/slots";
 import { timeToMinutes, minutesToTime } from "@/src/lib/booking/slots";
 import { calculatePrice } from "@/src/lib/booking/pricing";
-import { getBusyBlocks, createCalendarEvent, findEventBySubmissionId } from "@/src/lib/calendar/index";
-import { sendConfirmationEmail } from "@/src/lib/notifications/index";
+import { getBusyBlocks, createCalendarEventFromLegacy, findEventBySubmissionId } from "@/src/lib/calendar/index";
+import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifications/index";
 
 // Force the full Node.js runtime (never edge) — required on cPanel/Passenger.
 export const runtime = "nodejs";
@@ -206,7 +206,7 @@ export async function POST(request: Request) {
     // 12. Create Google Calendar event (skip if already found or not configured)
     if (!calendarEventId) {
       try {
-        calendarEventId = await createCalendarEvent({
+        calendarEventId = await createCalendarEventFromLegacy({
           calendarId,
           dateStr: localDate,
           startTime: localStartTime,
@@ -252,12 +252,13 @@ export async function POST(request: Request) {
       },
     });
 
-    // 14. Send confirmation email (non-blocking — failure does not fail the booking)
-    sendConfirmationEmail({
+    // 14. Send confirmation email + owner notification (non-blocking — failure does not fail the booking)
+    const emailData = {
       customerName: name,
       customerEmail: email,
-      serviceName: service.name,
-      addonNames: addons.map((a) => a.name),
+      customerPhone: phone,
+      service: service.name,
+      addons: addons.map((a) => a.name),
       localDate,
       localStartTime,
       localEndTime,
@@ -266,8 +267,13 @@ export async function POST(request: Request) {
       hasEveningSurcharge: priceSummary.hasEveningSurcharge,
       eveningSurchargeAmount: priceSummary.eveningSurcharge,
       notes,
-    }).catch((err) => {
+      calendarEventId,
+    };
+    sendConfirmationEmail(emailData).catch((err) => {
       console.error("[bookings] Confirmation email failed (non-fatal):", err);
+    });
+    sendOwnerNotification(emailData).catch((err) => {
+      console.error("[bookings] Owner notification failed (non-fatal):", err);
     });
 
     return Response.json({

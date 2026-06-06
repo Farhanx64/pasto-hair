@@ -131,3 +131,43 @@ Hit these URLs after each deploy:
 - [ ] Payload admin is accessible and first-user setup completes
 - [ ] A test media upload saves to the correct dir
 - [ ] `NODE_ENV=production` is set (disables Next.js dev overlays, enables caching)
+
+---
+
+## Wiring Google Calendar & Resend
+
+### Google Calendar setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → IAM & Admin → Service Accounts → **Create Service Account**.
+2. Give it a name (e.g. `pasto-hair-calendar`) and click **Done**.
+3. In the Google Cloud Console, go to **APIs & Services → Library** and enable the **Google Calendar API** for your project.
+4. Back on the Service Account, click **Keys → Add Key → Create new key → JSON**. Download the file.
+5. Open the JSON key file and copy:
+   - `client_email` → set as `GOOGLE_CALENDAR_CLIENT_EMAIL`
+   - `private_key` → set as `GOOGLE_CALENDAR_PRIVATE_KEY` (the full key including `-----BEGIN PRIVATE KEY-----` and newlines; on cPanel paste the literal multi-line value or replace actual newlines with `\n`)
+6. Open [Google Calendar](https://calendar.google.com/) → find the calendar `oppasto6@gmail.com` → Settings → **Share with specific people** → add the service account email with **Make changes to events** (Editor) permission.
+7. Set `GOOGLE_CALENDAR_ID=oppasto6@gmail.com`.
+
+**Env vars to set:**
+```
+GOOGLE_CALENDAR_ID=oppasto6@gmail.com
+GOOGLE_CALENDAR_CLIENT_EMAIL=<service-account-email>
+GOOGLE_CALENDAR_PRIVATE_KEY=<private-key-with-literal-newlines-or-\n-escaped>
+```
+
+> When these vars are absent the booking flow still works — availability returns [] (no busy blocks) and calendar events are skipped. Set them before going live.
+
+### Resend setup
+
+1. Sign up at [resend.com](https://resend.com) and create an API key (Sending Access).
+2. Verify your sending domain (or use Resend's sandbox `onboarding@resend.dev` for initial testing — note: sandbox only delivers to the account owner email).
+3. Set `RESEND_API_KEY=re_...` (your API key).
+4. Set `EMAIL_FROM=noreply@yourdomain.com` — this address must belong to your verified domain. It is also used as the **owner notification recipient** (new booking alerts go to this address).
+
+**Env vars to set:**
+```
+RESEND_API_KEY=re_...
+EMAIL_FROM=noreply@yourdomain.com
+```
+
+> When `RESEND_API_KEY` is absent, both `sendConfirmationEmail` and `sendOwnerNotification` log to the console instead of throwing, so the booking flow still completes successfully in dev.
