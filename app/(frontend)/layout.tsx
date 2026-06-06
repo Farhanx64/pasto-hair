@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Oswald, Montserrat } from "next/font/google";
 import "../globals.css";
+import { Navbar } from "@/components/layout/Navbar";
 
 const oswald = Oswald({
   variable: "--font-oswald",
@@ -30,7 +31,10 @@ export default function FrontendLayout({
       className={`${oswald.variable} ${montserrat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
+        <Navbar />
+        <main className="flex flex-col flex-1">
+          {children}
+        </main>
       </body>
     </html>
   );

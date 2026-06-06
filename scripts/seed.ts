@@ -114,7 +114,7 @@ const ADDONS = [
 
 const AVAILABILITY_RULES = [
   {
-    day: "sunday",
+    day: "sunday" as const,
     enabled: true,
     shifts: [
       { start: "12:00", end: "20:00" },
@@ -122,7 +122,7 @@ const AVAILABILITY_RULES = [
     ],
   },
   {
-    day: "monday",
+    day: "monday" as const,
     enabled: true,
     shifts: [
       { start: "14:30", end: "20:00" },
@@ -130,7 +130,7 @@ const AVAILABILITY_RULES = [
     ],
   },
   {
-    day: "tuesday",
+    day: "tuesday" as const,
     enabled: true,
     shifts: [
       { start: "12:00", end: "20:00" },
@@ -138,7 +138,7 @@ const AVAILABILITY_RULES = [
     ],
   },
   {
-    day: "wednesday",
+    day: "wednesday" as const,
     enabled: true,
     shifts: [
       { start: "14:30", end: "20:00" },
@@ -146,7 +146,7 @@ const AVAILABILITY_RULES = [
     ],
   },
   {
-    day: "thursday",
+    day: "thursday" as const,
     enabled: true,
     shifts: [
       { start: "12:00", end: "20:00" },
@@ -154,7 +154,7 @@ const AVAILABILITY_RULES = [
     ],
   },
   {
-    day: "friday",
+    day: "friday" as const,
     enabled: true,
     shifts: [
       { start: "14:00", end: "20:00" },
@@ -162,7 +162,7 @@ const AVAILABILITY_RULES = [
     ],
   },
   {
-    day: "saturday",
+    day: "saturday" as const,
     enabled: true,
     shifts: [
       { start: "12:00", end: "20:00" },

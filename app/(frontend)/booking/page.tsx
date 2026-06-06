@@ -60,7 +60,7 @@ type Step = 0 | 1 | 2 | 3 | 4;
 const EVENING_SURCHARGE_HOUR = 20; // 8 PM
 const EVENING_SURCHARGE = 10;
 
-// ── Main component ─────────────────────────────────────────────────────────
+// ── Main component with Suspense for useSearchParams ───────────────────────
 export default function BookingPage() {
   return (
     <React.Suspense fallback={null}>
@@ -231,7 +231,9 @@ function BookingPageInner() {
       });
       setSubmitSuccess(true);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setSubmitError(
+        err instanceof Error ? err.message : "Something went wrong. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -245,7 +247,10 @@ function BookingPageInner() {
           <GlassCard className="max-w-md w-full p-10 text-center flex flex-col items-center gap-6">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(187,134,252,0.15)", border: "1px solid rgba(187,134,252,0.3)" }}
+              style={{
+                background: "rgba(187,134,252,0.15)",
+                border: "1px solid rgba(187,134,252,0.3)",
+              }}
             >
               <Check size={32} color="#bb86fc" />
             </div>
@@ -293,11 +298,7 @@ function BookingPageInner() {
                 <React.Fragment key={label}>
                   <div
                     className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold font-[family-name:var(--font-montserrat)] transition-all duration-200 ${
-                      i < step
-                        ? "text-[#0a0a0c]"
-                        : i === step
-                        ? "text-[#0a0a0c]"
-                        : "text-[#8a8f98] bg-[rgba(255,255,255,0.06)]"
+                      i <= step ? "text-[#0a0a0c]" : "text-[#8a8f98] bg-[rgba(255,255,255,0.06)]"
                     }`}
                     style={
                       i <= step
@@ -462,12 +463,11 @@ function BookingPageInner() {
                             </>
                           )}
                         </select>
-                        {loadingSlots && (
+                        {loadingSlots ? (
                           <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                             <Loader2 size={16} className="animate-spin text-[#8a8f98]" />
                           </div>
-                        )}
-                        {!loadingSlots && (
+                        ) : (
                           <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                             <Clock size={16} color="#8a8f98" />
                           </div>
@@ -568,7 +568,10 @@ function BookingPageInner() {
                       />
                     )}
                     <ConfirmRow label="Date" value={selectedDate} />
-                    <ConfirmRow label="Time" value={selectedTime ? formatTime12(selectedTime) : "—"} />
+                    <ConfirmRow
+                      label="Time"
+                      value={selectedTime ? formatTime12(selectedTime) : "—"}
+                    />
                     <ConfirmRow label="Name" value={name} />
                     <ConfirmRow label="Email" value={email} />
                     <ConfirmRow label="Phone" value={phone} />
