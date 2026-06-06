@@ -50,3 +50,15 @@ export interface SlotGenerationInput {
   blockedDates: string[];    // ["YYYY-MM-DD"]
   busyBlocks: BusyBlock[];
 }
+
+export interface BookingRequest {
+  name: string;
+  email: string;
+  phone: string;
+  serviceId: string;
+  addonIds: string[];
+  notes?: string;
+  localDate: string;       // YYYY-MM-DD
+  localStartTime: string;  // HH:MM
+  submissionId: string;    // UUID from client
+}
