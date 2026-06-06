@@ -8,6 +8,16 @@ import sharp from "sharp";
 
 import { Users } from "./collections/Users";
 import { Media } from "./collections/Media";
+import { Services } from "./collections/Services";
+import { Addons } from "./collections/Addons";
+import { Staff } from "./collections/Staff";
+import { AvailabilityRules } from "./collections/AvailabilityRules";
+import { BlockedDates } from "./collections/BlockedDates";
+import { Bookings } from "./collections/Bookings";
+import { GalleryItems } from "./collections/GalleryItems";
+import { Testimonials } from "./collections/Testimonials";
+import { BusinessSettings } from "./globals/BusinessSettings";
+import { BookingSettings } from "./globals/BookingSettings";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -25,7 +35,8 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, Services, Addons, Staff, AvailabilityRules, BlockedDates, Bookings, GalleryItems, Testimonials],
+  globals: [BusinessSettings, BookingSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {
