@@ -9,7 +9,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const baseStyles =
-  "inline-flex items-center justify-center cursor-pointer font-semibold uppercase tracking-wide rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-3 disabled:opacity-50 disabled:cursor-not-allowed select-none";
+  "inline-flex items-center justify-center cursor-pointer font-semibold uppercase tracking-wide rounded-full transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-3 disabled:opacity-50 disabled:cursor-not-allowed select-none [touch-action:manipulation]";
 
 const variantStyles: Record<Variant, string> = {
   primary:
@@ -21,7 +21,7 @@ const variantStyles: Record<Variant, string> = {
 };
 
 const sizeStyles: Record<Size, string> = {
-  sm: "text-xs px-5 min-h-[40px] gap-1.5",
+  sm: "text-xs px-5 min-h-[44px] gap-1.5",
   md: "text-sm px-7 min-h-[48px] gap-2",
   lg: "text-base px-9 min-h-[56px] gap-2.5",
 };

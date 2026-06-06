@@ -31,8 +31,11 @@ export default function FrontendLayout({
       className={`${oswald.variable} ${montserrat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <Navbar />
-        <main className="flex flex-col flex-1">
+        <main id="main-content" className="flex flex-col flex-1">
           {children}
         </main>
       </body>

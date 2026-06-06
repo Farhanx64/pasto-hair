@@ -292,11 +292,13 @@ function BookingPageInner() {
           </div>
 
           {/* Step indicator */}
-          <div className="mb-10">
+          <div className="mb-10" role="navigation" aria-label="Booking steps">
             <div className="flex items-center gap-1 justify-center mb-3">
               {STEPS.map((label, i) => (
                 <React.Fragment key={label}>
                   <div
+                    aria-label={`Step ${i + 1}: ${label}${i < step ? " (completed)" : i === step ? " (current)" : ""}`}
+                    aria-current={i === step ? "step" : undefined}
                     className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold font-[family-name:var(--font-montserrat)] transition-all duration-200 ${
                       i <= step ? "text-[#0a0a0c]" : "text-[#8a8f98] bg-[rgba(255,255,255,0.06)]"
                     }`}
@@ -306,7 +308,7 @@ function BookingPageInner() {
                         : undefined
                     }
                   >
-                    {i < step ? <Check size={14} /> : i + 1}
+                    {i < step ? <Check size={14} aria-hidden="true" /> : i + 1}
                   </div>
                   {i < STEPS.length - 1 && (
                     <div
@@ -395,13 +397,15 @@ function BookingPageInner() {
                 <StepSection title="Pick a Date & Time" icon={Calendar}>
                   {availabilityUnavailable && (
                     <div
+                      role="alert"
+                      aria-live="polite"
                       className="mb-5 flex items-start gap-3 px-4 py-3 rounded-xl"
                       style={{
                         background: "rgba(248,113,113,0.08)",
                         border: "1px solid rgba(248,113,113,0.2)",
                       }}
                     >
-                      <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" color="#f87171" />
+                      <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" color="#f87171" aria-hidden="true" />
                       <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#f87171]">
                         Availability temporarily unavailable — shown times may not reflect
                         real-time bookings.
@@ -418,7 +422,7 @@ function BookingPageInner() {
                         min={todayISO()}
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2"
+                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -435,7 +439,7 @@ function BookingPageInner() {
                           value={selectedTime}
                           onChange={(e) => setSelectedTime(e.target.value)}
                           disabled={!selectedDate || loadingSlots}
-                          className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+                          className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)] disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
                           style={{
                             background: "rgba(255,255,255,0.05)",
                             border: "1px solid rgba(255,255,255,0.1)",
@@ -491,7 +495,7 @@ function BookingPageInner() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="John Doe"
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2"
+                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -509,7 +513,7 @@ function BookingPageInner() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="john@example.com"
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2"
+                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -527,7 +531,7 @@ function BookingPageInner() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+1 (555) 000-0000"
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2"
+                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -544,7 +548,7 @@ function BookingPageInner() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Any requests or special instructions..."
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 resize-none"
+                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)] resize-none"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -599,13 +603,15 @@ function BookingPageInner() {
 
                   {submitError && (
                     <div
+                      role="alert"
+                      aria-live="assertive"
                       className="mb-5 flex items-start gap-3 px-4 py-3 rounded-xl"
                       style={{
                         background: "rgba(248,113,113,0.08)",
                         border: "1px solid rgba(248,113,113,0.2)",
                       }}
                     >
-                      <X size={16} className="mt-0.5 flex-shrink-0" color="#f87171" />
+                      <X size={16} className="mt-0.5 flex-shrink-0" color="#f87171" aria-hidden="true" />
                       <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#f87171]">
                         {submitError}
                       </p>
