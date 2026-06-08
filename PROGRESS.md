@@ -6,9 +6,10 @@
 
 ## Repo
 
-**github.com/Farhanx64/pasto-hair-modern** (private)
+**github.com/Farhanx64/pasto-hair-modern** (primary)
+**github.com/Farhanx64/pasto-hair** — `modernized` branch (mirror, force-pushed 2026-06-08)
 
-Old site reference: `/home/pasto/pasto-hair/old/` (cloned from github.com/Farhanx64/pasto-hair — do not copy its markup)
+Old site reference: `/home/pasto/pasto-hair/old/` (cloned from github.com/Farhanx64/pasto-hair `main` — do not copy its markup)
 
 ---
 
@@ -144,7 +145,7 @@ d90ed71  feat: ui-ux-pro-max design system
 - [ ] Verify `/healthz` returns `{"status":"ok","db":"reachable"}` on host
 
 ### Integrations (fill env vars to activate)
-- [ ] Google Calendar: create service account, share calendar with it, set `GOOGLE_CALENDAR_CLIENT_EMAIL` + `GOOGLE_CALENDAR_PRIVATE_KEY`
+- [x] Google Calendar: service account created (`pasto-calendar@gold-setup-435800-i3.iam.gserviceaccount.com`), credentials set in `.env`. Calendar ID switched to dedicated group calendar. **Remaining:** share the group calendar with the service account in Google Calendar settings (Make changes to events permission).
 - [ ] Resend: create API key, verify sending domain, set `RESEND_API_KEY` + `EMAIL_FROM`
 - [ ] Footer social links: replace placeholder `href` values with real Instagram/Facebook/X URLs
 
