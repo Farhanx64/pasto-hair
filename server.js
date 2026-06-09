@@ -1,21 +1,14 @@
-/**
- * Custom Next.js server for Phusion Passenger (cPanel "Setup Node.js App").
- *
- * Passenger sets process.env.PORT to the socket/port it manages.
- * This file must be listed as the "Application startup file" in cPanel.
- *
- * After deploy or code changes: touch tmp/restart.txt to reload the app.
- */
-
 import { createServer } from "node:http";
 import { parse } from "node:url";
 import next from "next";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOST || "localhost";
-const port = parseInt(process.env.PORT || "3000", 10);
+const portOrSocket = process.env.PORT || "3000";
+const isSocket = isNaN(Number(portOrSocket));
+const listenTarget = isSocket ? portOrSocket : parseInt(portOrSocket, 10);
+const hostname = isSocket ? undefined : (process.env.HOST || "localhost");
 
-const app = next({ dev, hostname, port });
+const app = next({ dev, hostname, port: isSocket ? 0 : listenTarget });
 const handle = app.getRequestHandler();
 
 await app.prepare();
@@ -25,6 +18,10 @@ const server = createServer(async (req, res) => {
   await handle(req, res, parsedUrl);
 });
 
-server.listen(port, hostname, () => {
-  console.log(`> Pasto Hair ready on http://${hostname}:${port}`);
+server.listen(listenTarget, hostname, () => {
+  if (isSocket) {
+    console.log(`> Pasto Hair ready on socket ${listenTarget}`);
+  } else {
+    console.log(`> Pasto Hair ready on http://${hostname}:${listenTarget}`);
+  }
 });
