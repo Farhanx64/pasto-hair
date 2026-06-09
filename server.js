@@ -1,6 +1,14 @@
 import { createServer } from "node:http";
 import { parse } from "node:url";
+import { writeFileSync } from "node:fs";
 import next from "next";
+
+// Dump env at startup so we can see what Passenger provides
+try {
+  writeFileSync("/tmp/pasto-startup.log",
+    `[${new Date().toISOString()}] PORT=${process.env.PORT} NODE_ENV=${process.env.NODE_ENV} CWD=${process.cwd()}\n`,
+    { flag: "a" });
+} catch (_) {}
 
 const dev = process.env.NODE_ENV !== "production";
 const portOrSocket = process.env.PORT || "3000";
