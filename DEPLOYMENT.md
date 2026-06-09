@@ -32,7 +32,7 @@ NEXT_PUBLIC_SITE_URL=https://pasto.hair
 NODE_ENV=production
 
 # Google Calendar (fill when ready)
-GOOGLE_CALENDAR_ID=oppasto6@gmail.com
+GOOGLE_CALENDAR_ID=<dedicated-group-calendar-id>@group.calendar.google.com
 GOOGLE_CALENDAR_CLIENT_EMAIL=
 GOOGLE_CALENDAR_PRIVATE_KEY=
 
@@ -83,11 +83,28 @@ touch tmp/restart.txt
 
 ## Restart After Code Changes
 
+On LiteSpeed/CloudLinux, `touch tmp/restart.txt` is unreliable. Use the CloudLinux selector to force a clean restart:
+
 ```bash
-touch ~/public_html/pasto-hair/tmp/restart.txt
+/sbin/cloudlinux-selector restart --json --interpreter nodejs \
+  --app-root repositories/pasto-hair --domain pasto.hair
 ```
 
-Passenger watches this file and reloads the Node process.
+`touch ~/repositories/pasto-hair/tmp/restart.txt` may work as a lighter reload, but the selector command is authoritative.
+
+---
+
+## ⚠️ LiteSpeed gotcha: NO top-level await in `server.js`
+
+LiteSpeed's Node loader (`/usr/local/lsws/fcgi-bin/lsnode.js`) loads the startup file via **`require()`**, not as an ESM entry point. Node throws `ERR_REQUIRE_ASYNC_MODULE` when `require()` hits an ESM module (`"type": "module"`) that uses **top-level await**. The app silently fails to spawn → **503 Service Unavailable**, while `node server.js` from the shell works fine (ESM entry points permit TLA).
+
+**Rule:** keep all async startup inside `.then()` / callbacks. Never write `await app.prepare()` at the top level. See `server.js` for the correct pattern.
+
+Errors from failed spawns land in `~/repositories/pasto-hair/stderr.log` — check there first when the site 503s but the app runs manually.
+
+### PORT may be a Unix socket path
+
+LiteSpeed/Passenger passes `process.env.PORT` as a **Unix socket path**, not a numeric TCP port. `parseInt(PORT)` yields `NaN` and `server.listen(NaN)` silently no-ops (app runs, binds nothing → 503). `server.js` detects socket vs. number and calls `listen()` accordingly.
 
 ---
 
@@ -145,12 +162,12 @@ Hit these URLs after each deploy:
 5. Open the JSON key file and copy:
    - `client_email` → set as `GOOGLE_CALENDAR_CLIENT_EMAIL`
    - `private_key` → set as `GOOGLE_CALENDAR_PRIVATE_KEY` (the full key including `-----BEGIN PRIVATE KEY-----` and newlines; on cPanel paste the literal multi-line value or replace actual newlines with `\n`)
-6. Open [Google Calendar](https://calendar.google.com/) → find the calendar `oppasto6@gmail.com` → Settings → **Share with specific people** → add the service account email with **Make changes to events** (Editor) permission.
-7. Set `GOOGLE_CALENDAR_ID=oppasto6@gmail.com`.
+6. Create a **dedicated calendar** (Google Calendar → "+" next to *Other calendars* → *Create new calendar*) rather than using a personal one. Then open its **Settings and sharing** → **Share with specific people** → add the service account email with **Make changes to events** (Editor) permission.
+7. In that calendar's settings, copy the **Calendar ID** (looks like `...@group.calendar.google.com`) and set `GOOGLE_CALENDAR_ID` to it.
 
 **Env vars to set:**
 ```
-GOOGLE_CALENDAR_ID=oppasto6@gmail.com
+GOOGLE_CALENDAR_ID=<dedicated-group-calendar-id>@group.calendar.google.com
 GOOGLE_CALENDAR_CLIENT_EMAIL=<service-account-email>
 GOOGLE_CALENDAR_PRIVATE_KEY=<private-key-with-literal-newlines-or-\n-escaped>
 ```
