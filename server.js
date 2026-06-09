@@ -11,7 +11,6 @@
  */
 
 import { createServer } from "node:http";
-import { parse } from "node:url";
 import next from "next";
 
 const dev = process.env.NODE_ENV !== "production";
@@ -27,8 +26,7 @@ app
   .prepare()
   .then(() => {
     const server = createServer((req, res) => {
-      const parsedUrl = parse(req.url, true);
-      handle(req, res, parsedUrl);
+      handle(req, res);
     });
 
     server.listen(listenTarget, hostname, () => {
