@@ -6,6 +6,11 @@ export const Addons: CollectionConfig = {
     useAsTitle: "name",
     defaultColumns: ["name", "price", "durationMinutes", "active"],
   },
+  access: {
+    // Public read so the booking page can list add-ons without auth.
+    // Create/update/delete remain admin-only (Payload default).
+    read: () => true,
+  },
   fields: [
     {
       name: "id",

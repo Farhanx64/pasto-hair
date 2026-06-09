@@ -6,6 +6,11 @@ export const Services: CollectionConfig = {
     useAsTitle: "name",
     defaultColumns: ["name", "price", "durationMinutes", "active", "sortOrder"],
   },
+  access: {
+    // Public read so the booking page can list services without auth.
+    // Create/update/delete remain admin-only (Payload default).
+    read: () => true,
+  },
   fields: [
     {
       name: "id",
