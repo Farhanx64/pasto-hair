@@ -116,8 +116,8 @@ function BookingPageInner() {
     async function load() {
       try {
         const [sRes, aRes] = await Promise.all([
-          fetch("/api/payload/services?where[active][equals]=true&sort=sortOrder&limit=100"),
-          fetch("/api/payload/addons?where[active][equals]=true&limit=100"),
+          fetch("/api/services?where[active][equals]=true&sort=sortOrder&limit=100"),
+          fetch("/api/addons?where[active][equals]=true&limit=100"),
         ]);
         const sData = await sRes.json();
         const aData = await aRes.json();

@@ -117,7 +117,8 @@ Hit these URLs after each deploy:
 | `https://pasto.hair/` | Homepage (dark, Pasto Hair brand) |
 | `https://pasto.hair/admin` | Payload CMS admin login |
 | `https://pasto.hair/healthz` | `{"status":"ok","db":"reachable",...}` |
-| `https://pasto.hair/api/payload/users` | Payload REST API (returns 401 without auth) |
+| `https://pasto.hair/api/users` | Payload REST API (returns 401 without auth) |
+| `https://pasto.hair/api/services` | Seeded services JSON (`docs` array) |
 
 ---
 
