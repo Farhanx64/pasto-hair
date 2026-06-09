@@ -1,14 +1,18 @@
+/**
+ * Custom Next.js server for LiteSpeed / Phusion Passenger (cPanel Node.js app).
+ *
+ * IMPORTANT: No top-level await. LiteSpeed's lsnode.js loads this file via
+ * require(), and require() throws ERR_REQUIRE_ASYNC_MODULE on an ESM module
+ * that uses top-level await. Keep all async work inside .then() callbacks.
+ *
+ * PORT may be a numeric TCP port (manual/dev) or a Unix socket path (Passenger).
+ *
+ * After deploy or code changes: touch tmp/restart.txt to reload the app.
+ */
+
 import { createServer } from "node:http";
 import { parse } from "node:url";
-import { writeFileSync } from "node:fs";
 import next from "next";
-
-// Dump env at startup so we can see what Passenger provides
-try {
-  writeFileSync("/tmp/pasto-startup.log",
-    `[${new Date().toISOString()}] PORT=${process.env.PORT} NODE_ENV=${process.env.NODE_ENV} CWD=${process.cwd()}\n`,
-    { flag: "a" });
-} catch (_) {}
 
 const dev = process.env.NODE_ENV !== "production";
 const portOrSocket = process.env.PORT || "3000";
@@ -19,17 +23,23 @@ const hostname = isSocket ? undefined : (process.env.HOST || "localhost");
 const app = next({ dev, hostname, port: isSocket ? 0 : listenTarget });
 const handle = app.getRequestHandler();
 
-await app.prepare();
+app
+  .prepare()
+  .then(() => {
+    const server = createServer((req, res) => {
+      const parsedUrl = parse(req.url, true);
+      handle(req, res, parsedUrl);
+    });
 
-const server = createServer(async (req, res) => {
-  const parsedUrl = parse(req.url, true);
-  await handle(req, res, parsedUrl);
-});
-
-server.listen(listenTarget, hostname, () => {
-  if (isSocket) {
-    console.log(`> Pasto Hair ready on socket ${listenTarget}`);
-  } else {
-    console.log(`> Pasto Hair ready on http://${hostname}:${listenTarget}`);
-  }
-});
+    server.listen(listenTarget, hostname, () => {
+      if (isSocket) {
+        console.log(`> Pasto Hair ready on socket ${listenTarget}`);
+      } else {
+        console.log(`> Pasto Hair ready on http://${hostname}:${listenTarget}`);
+      }
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to start Next.js server:", err);
+    process.exit(1);
+  });
