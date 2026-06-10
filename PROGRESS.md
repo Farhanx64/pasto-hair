@@ -1,6 +1,37 @@
 # Pasto Hair Rebuild — Progress Log
 
-## Status: All 6 phases complete. Dev server verified. Ready for cPanel deploy.
+## Status: 🟢 LIVE at https://pasto.hair — deployed to Namecheap cPanel (2026-06-09). Booking + Google Calendar invites working.
+
+---
+
+## Deployment — LIVE (2026-06-09)
+
+Deployed to Namecheap Stellar shared hosting (cPanel, **LiteSpeed** web server — not Apache — with the CloudLinux/Phusion Passenger Node loader `lsnode.js`). Host: `server377`, user `pastvucd`, app root `/home/pastvucd/repositories/pasto-hair`, data dir `/home/pastvucd/pasto-data`.
+
+### Deploy model that works
+- **Build locally, upload `.next`** (shared-host LVE memory limits kill `next build` on the server). Build with `next build --webpack` (Turbopack panics on the venv symlinks). Zip excludes `.next/cache` **and** `.next/dev` → ~3.9 MB (a stray `.next/dev/` from a past `next dev` had bloated it to 240 MB).
+- Upload `next-build.zip` to app root via File Manager → `rm -rf .next && unzip -q next-build.zip`.
+- Restart authoritatively with the CloudLinux selector (NOT `touch tmp/restart.txt`, which is unreliable on LiteSpeed):
+  ```
+  /sbin/cloudlinux-selector restart --json --interpreter nodejs \
+    --app-root repositories/pasto-hair --domain pasto.hair
+  ```
+  ⚠️ The `--app-root`/`--domain` must be exact — a typo returns `{"result":"success"}` but restarts nothing.
+- App stderr (crash/runtime errors) → `/home/pastvucd/repositories/pasto-hair/stderr.log`. Check it first when the site errors but the app runs manually.
+
+### Bugs fixed during deploy (root causes)
+1. **Turbopack symlink panic** → build script uses `next build --webpack`.
+2. **503, app never started** → LiteSpeed's `lsnode.js` loads `server.js` via `require()`, which throws `ERR_REQUIRE_ASYNC_MODULE` on an ESM module with **top-level await**. Fix: wrap startup in `app.prepare().then(...)` — no TLA. (Manual `node server.js` worked because ESM entry points allow TLA — that's why it was hard to spot.)
+3. **`PORT` is a Unix socket path**, not a number — `parseInt` → `NaN` → `listen(NaN)` binds nothing. `server.js` now detects socket vs TCP.
+4. **Old static site shadowed the app** — `public_html` was full of the old Website Builder site (`index.html`, etc.); LiteSpeed served those for `/` while only unmatched paths (`/healthz`) reached Node. Fix: moved everything except `.htaccess` + `.well-known` to `~/old-site-backup/`.
+5. **Booking showed no services** — page fetched `/api/payload/services`; Payload's REST base is `/api` → corrected to `/api/services` + `/api/addons`.
+6. **Payload 403 on anonymous reads** — added `access: { read: () => true }` to Services + Addons collections (the booking page reads them without auth).
+7. **Stale 403/JSON served by LiteSpeed cache** — added `.htaccess` rule to bypass cache for `/api/`: `RewriteRule ^api/ - [E=Cache-Control:no-cache]`.
+8. **Webpack build cache served stale config** — when iterating, do a **clean** `rm -rf .next` build or the access/config change silently won't ship.
+
+### Env on the server
+- `.env` at app root holds secrets; Next loads it at startup. **Gotcha:** `.env` had Windows CRLF — a trailing `\r` on `GOOGLE_CALENDAR_ID` caused a 404 (`...google.com\r`). Cleaned with `sed -i 's/\r$//' .env`.
+- Critical env vars are **also** injected as `SetEnv` in the `.htaccess` `<IfModule Litespeed>` block (the reliable LiteSpeed delivery mechanism — `inject-htaccess-env.cjs` copies them from `.env`).
 
 ---
 
@@ -23,7 +54,7 @@ Old site reference: `/home/pasto/pasto-hair/old/` (cloned from github.com/Farhan
 | Styling | Tailwind CSS v4 |
 | Animation | `motion` library |
 | Icons | Lucide React |
-| Calendar | Google Calendar API (service account, direct) |
+| Calendar | Google Calendar API — **OAuth2 user-delegated** (acts as owner, so it can invite attendees). Service account kept as read-only fallback. |
 | Email | Resend |
 | Hosting target | Namecheap Stellar shared hosting — cPanel "Setup Node.js App" (Phusion Passenger) |
 | Node requirement | ≥ 20.9.0 (host confirmed: 20.20.2, 22.22.2, 24.1 available) |
@@ -134,20 +165,25 @@ d90ed71  feat: ui-ux-pro-max design system
 
 ## What Still Needs Doing
 
-### Before going live (blocking)
-- [ ] Deploy to Namecheap cPanel — follow `DEPLOYMENT.md`
-- [ ] Confirm Node 20.x is selected in cPanel "Setup Node.js App"
-- [ ] Create private data dir: `/home/<user>/pasto-data/media/`
-- [ ] Set all env vars in cPanel (see `DEPLOYMENT.md` and `.env.example`)
-- [ ] Run `payload migrate` on server (first deploy only)
-- [ ] Run `node scripts/seed.ts` on server
-- [ ] Create first Payload admin user at `/admin`
-- [ ] Verify `/healthz` returns `{"status":"ok","db":"reachable"}` on host
+### Deploy (DONE)
+- [x] Deployed to Namecheap cPanel (Node 24.15.0) — site live at https://pasto.hair
+- [x] Node 24 selected in cPanel "Setup Node.js App"
+- [x] Private data dir created: `/home/pastvucd/pasto-data/media/`
+- [x] Env vars set (`.env` + `.htaccess` SetEnv)
+- [x] Migrations run + DB seeded on server
+- [x] `/healthz` returns `{"status":"ok","db":"reachable"}`
+- [ ] **Create first Payload admin user at `/admin`** (still pending — `users: 0`)
 
-### Integrations (fill env vars to activate)
-- [x] Google Calendar: service account created (`pasto-calendar@gold-setup-435800-i3.iam.gserviceaccount.com`), credentials set in `.env`. Calendar ID switched to dedicated group calendar. **Remaining:** share the group calendar with the service account in Google Calendar settings (Make changes to events permission).
-- [ ] Resend: create API key, verify sending domain, set `RESEND_API_KEY` + `EMAIL_FROM`
+### Integrations
+- [x] **Google Calendar — WORKING via OAuth2.** Service account on a personal Gmail (`farfarvip2003@gmail.com`) **cannot invite attendees** (needs Workspace Domain-Wide Delegation → 403 on `events.insert` with attendees). Switched to OAuth2 user delegation: OAuth Desktop client (ID `431451096136-...`), consent screen **published to Production** (so refresh token doesn't expire), one-time consent as the owner → refresh token in `.env` as `GOOGLE_OAUTH_CLIENT_ID/_CLIENT_SECRET/_REFRESH_TOKEN`. `getCalendarClient()` prefers OAuth, falls back to service account. Target calendar = **"CUTS"** (`27b3...@group.calendar.google.com`).
+- [ ] Resend: create API key, verify sending domain, set `RESEND_API_KEY` + `EMAIL_FROM` (booking still completes without it — emails just log to console)
 - [ ] Footer social links: replace placeholder `href` values with real Instagram/Facebook/X URLs
+
+### Security / cleanup follow-ups
+- [ ] **Rotate the OAuth refresh token** — it was printed in the terminal/chat during setup. Revoke at myaccount.google.com/permissions, re-run `oauth-consent.cjs`, restart. (Risk is low — transcript only, not a public repo.)
+- [ ] Rotate the **Google service-account key** — its private key was exposed earlier (likely already auto-revoked by Google secret-scanning; OAuth is now the active path anyway).
+- [ ] Delete server helper/test scripts: `test-*.cjs`, `oauth-consent.cjs`, `update-calendar-key.cjs`, `inject-htaccess-env.cjs`, and the "TEST …" events on the CUTS calendar.
+- [ ] Delete junk file `zi2NTVxv` (268 MB) in repo root.
 
 ### Future phases
 - [ ] Real gallery — upload photos/videos in Payload admin, wire `galleryItems` collection to gallery page
