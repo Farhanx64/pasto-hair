@@ -45,3 +45,7 @@ next-env.d.ts
 /payload-types.ts
 /tmp
 !.env.example
+
+# deployment build artifacts
+next-build.zip
+*.zip
