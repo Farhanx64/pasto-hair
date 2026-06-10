@@ -20,15 +20,45 @@ import type { BusyBlock } from "../booking/types";
 
 const TIMEZONE = "America/New_York";
 
-function isConfigured(): boolean {
+function hasOAuthCreds(): boolean {
+  return Boolean(
+    process.env.GOOGLE_OAUTH_CLIENT_ID &&
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+      process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
+  );
+}
+
+function hasServiceAccountCreds(): boolean {
   return Boolean(
     process.env.GOOGLE_CALENDAR_CLIENT_EMAIL &&
-      process.env.GOOGLE_CALENDAR_PRIVATE_KEY &&
-      process.env.GOOGLE_CALENDAR_ID,
+      process.env.GOOGLE_CALENDAR_PRIVATE_KEY,
+  );
+}
+
+function isConfigured(): boolean {
+  return Boolean(
+    process.env.GOOGLE_CALENDAR_ID &&
+      (hasOAuthCreds() || hasServiceAccountCreds()),
   );
 }
 
 export function getCalendarClient() {
+  // Prefer OAuth2 user delegation: it acts as the calendar owner, so it can
+  // invite attendees. A service account on a personal Gmail calendar cannot
+  // invite attendees (that needs Google Workspace Domain-Wide Delegation) and
+  // returns 403 on events.insert with attendees.
+  if (hasOAuthCreds()) {
+    const oauth2 = new google.auth.OAuth2(
+      process.env.GOOGLE_OAUTH_CLIENT_ID,
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+    );
+    oauth2.setCredentials({
+      refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
+    });
+    return google.calendar({ version: "v3", auth: oauth2 });
+  }
+
+  // Fallback: service account (freebusy/read works; cannot invite attendees).
   const clientEmail = process.env.GOOGLE_CALENDAR_CLIENT_EMAIL ?? "";
   const privateKey = (process.env.GOOGLE_CALENDAR_PRIVATE_KEY ?? "").replace(
     /\\n/g,
@@ -37,12 +67,12 @@ export function getCalendarClient() {
 
   if (!clientEmail) {
     throw new Error(
-      "Google Calendar is not configured: GOOGLE_CALENDAR_CLIENT_EMAIL is empty",
+      "Google Calendar is not configured: no OAuth credentials and GOOGLE_CALENDAR_CLIENT_EMAIL is empty",
     );
   }
   if (!privateKey) {
     throw new Error(
-      "Google Calendar is not configured: GOOGLE_CALENDAR_PRIVATE_KEY is empty",
+      "Google Calendar is not configured: no OAuth credentials and GOOGLE_CALENDAR_PRIVATE_KEY is empty",
     );
   }
 
