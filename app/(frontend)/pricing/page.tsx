@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Clock, Plus } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
@@ -75,26 +74,14 @@ export default async function PricingPage() {
               PRICING
             </h1>
             <p className="font-[family-name:var(--font-montserrat)] text-[#8a8f98] max-w-md mx-auto">
-              Transparent pricing. No hidden fees. Just sharp cuts and honest work.
+              Transparent rates for every service. Prices and durations update
+              instantly in the booking flow.
             </p>
           </div>
 
-          {/* Evening surcharge note */}
-          <GlassCard
-            className="mb-12 px-6 py-4 flex items-start gap-3"
-            hover={false}
-          >
-            <Clock size={18} className="mt-0.5 flex-shrink-0" color="#bb86fc" />
-            <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed]/80">
-              <span className="font-semibold text-[#bb86fc]">Evening rate:</span>{" "}
-              Bookings starting at or after {surchargeHour12}:00 {surchargeAmPm} include a $
-              {surchargeAmount} evening surcharge.
-            </p>
-          </GlassCard>
-
           {/* Services */}
-          <section className="mb-16">
-            <h2 className="font-[family-name:var(--font-oswald)] text-xl sm:text-2xl font-semibold uppercase tracking-widest text-[#ededed] mb-6">
+          <section className="mb-12">
+            <h2 className="font-[family-name:var(--font-oswald)] font-semibold uppercase tracking-wide text-[15px] text-[#8a8f98] mb-4">
               Services
             </h2>
             {services.length === 0 ? (
@@ -102,7 +89,7 @@ export default async function PricingPage() {
                 Services coming soon.
               </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4 mb-12">
                 {services.map((service) => (
                   <ServiceRow key={service.id} service={service} />
                 ))}
@@ -112,17 +99,26 @@ export default async function PricingPage() {
 
           {/* Add-ons */}
           {addons.length > 0 && (
-            <section className="mb-16">
-              <h2 className="font-[family-name:var(--font-oswald)] text-xl sm:text-2xl font-semibold uppercase tracking-widest text-[#ededed] mb-6">
-                Add-ons
+            <section className="mb-8">
+              <h2 className="font-[family-name:var(--font-oswald)] font-semibold uppercase tracking-wide text-[15px] text-[#8a8f98] mb-4">
+                Add-Ons
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
                 {addons.map((addon) => (
                   <AddonRow key={addon.id} addon={addon} />
                 ))}
               </div>
             </section>
           )}
+
+          {/* Evening surcharge note */}
+          <div
+            className="mb-12 px-5 py-4 rounded-2xl font-[family-name:var(--font-montserrat)] text-sm text-[#ededed]"
+            style={{ background: "rgba(187,134,252,0.08)", border: "1px solid rgba(187,134,252,0.25)" }}
+          >
+            A ${surchargeAmount} evening surcharge applies to appointments starting
+            at or after {surchargeHour12}:00 {surchargeAmPm}.
+          </div>
 
           {/* CTA */}
           <div className="text-center pt-8">
@@ -143,60 +139,45 @@ export default async function PricingPage() {
 
 function ServiceRow({ service }: { service: Service }) {
   return (
-    <GlassCard className="p-6 flex flex-col gap-4">
-      <div className="flex-1">
+    <GlassCard className="px-6 py-5 flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-3">
         <h3 className="font-[family-name:var(--font-oswald)] text-lg font-semibold uppercase tracking-wide text-[#ededed]">
           {service.name}
         </h3>
-        {service.description && (
-          <p className="font-[family-name:var(--font-montserrat)] text-xs text-[#8a8f98] mt-1 leading-relaxed">
-            {service.description}
-          </p>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between">
         <span
-          className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
+          className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums flex-shrink-0"
           style={{ color: "#e8dcc4" }}
         >
           ${service.price}
         </span>
-        <span
-          className="font-[family-name:var(--font-montserrat)] text-xs px-2.5 py-1 rounded-full text-[#8a8f98]"
-          style={{ background: "rgba(255,255,255,0.06)" }}
-        >
+      </div>
+      {service.description && (
+        <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] leading-relaxed">
+          {service.description}
+        </p>
+      )}
+      <div className="flex items-center justify-between mt-1.5">
+        <span className="font-[family-name:var(--font-montserrat)] text-[13px] text-[#8a8f98]">
           {service.durationMinutes} min
         </span>
+        <Link href={`/booking?service=${service.id}`} className="rounded-full">
+          <Button variant="secondary" size="sm">Book This</Button>
+        </Link>
       </div>
-
-      <Link href={`/booking?service=${service.id}`} className="rounded-full">
-        <Button variant="secondary" size="sm" className="w-full">
-          Book This
-        </Button>
-      </Link>
     </GlassCard>
   );
 }
 
 function AddonRow({ addon }: { addon: Addon }) {
   return (
-    <GlassCard className="p-5 flex items-center justify-between gap-3">
-      <div className="flex items-start gap-3">
-        <div
-          className="mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: "rgba(187,134,252,0.1)", border: "1px solid rgba(187,134,252,0.2)" }}
-        >
-          <Plus size={12} color="#bb86fc" />
-        </div>
-        <div>
-          <h3 className="font-[family-name:var(--font-oswald)] text-base font-semibold uppercase tracking-wide text-[#ededed]">
-            {addon.name}
-          </h3>
-          <span className="font-[family-name:var(--font-montserrat)] text-xs text-[#8a8f98]">
-            +{addon.durationMinutes} min
-          </span>
-        </div>
+    <GlassCard className="px-5 py-4 flex items-center justify-between gap-3">
+      <div>
+        <h3 className="font-[family-name:var(--font-oswald)] text-[15px] font-semibold uppercase tracking-wide text-[#ededed]">
+          {addon.name}
+        </h3>
+        <p className="font-[family-name:var(--font-montserrat)] text-xs text-[#8a8f98] mt-0.5">
+          +{addon.durationMinutes} min
+        </p>
       </div>
       <span
         className="font-[family-name:var(--font-montserrat)] text-base font-bold tabular-nums flex-shrink-0"
