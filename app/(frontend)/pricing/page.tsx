@@ -102,7 +102,7 @@ export default async function PricingPage() {
                 Services coming soon.
               </p>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {services.map((service) => (
                   <ServiceRow key={service.id} service={service} />
                 ))}
@@ -116,7 +116,7 @@ export default async function PricingPage() {
               <h2 className="font-[family-name:var(--font-oswald)] text-xl sm:text-2xl font-semibold uppercase tracking-widest text-[#ededed] mb-6">
                 Add-ons
               </h2>
-              <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {addons.map((addon) => (
                   <AddonRow key={addon.id} addon={addon} />
                 ))}
@@ -143,45 +143,46 @@ export default async function PricingPage() {
 
 function ServiceRow({ service }: { service: Service }) {
   return (
-    <GlassCard className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <GlassCard className="p-6 flex flex-col gap-4">
       <div className="flex-1">
         <h3 className="font-[family-name:var(--font-oswald)] text-lg font-semibold uppercase tracking-wide text-[#ededed]">
           {service.name}
         </h3>
         {service.description && (
-          <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] mt-0.5">
+          <p className="font-[family-name:var(--font-montserrat)] text-xs text-[#8a8f98] mt-1 leading-relaxed">
             {service.description}
           </p>
         )}
       </div>
-      <div className="flex items-center gap-4 flex-shrink-0">
+
+      <div className="flex items-center justify-between">
+        <span
+          className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
+          style={{ color: "#e8dcc4" }}
+        >
+          ${service.price}
+        </span>
         <span
           className="font-[family-name:var(--font-montserrat)] text-xs px-2.5 py-1 rounded-full text-[#8a8f98]"
           style={{ background: "rgba(255,255,255,0.06)" }}
         >
           {service.durationMinutes} min
         </span>
-        <span
-          className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums w-16 text-right"
-          style={{ color: "#e8dcc4" }}
-        >
-          ${service.price}
-        </span>
-        <Link
-          href={`/booking?service=${service.id}`}
-          className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded-full"
-        >
-          <Button variant="primary" size="sm">Book</Button>
-        </Link>
       </div>
+
+      <Link href={`/booking?service=${service.id}`} className="rounded-full">
+        <Button variant="secondary" size="sm" className="w-full">
+          Book This
+        </Button>
+      </Link>
     </GlassCard>
   );
 }
 
 function AddonRow({ addon }: { addon: Addon }) {
   return (
-    <GlassCard className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div className="flex items-start gap-3 flex-1">
+    <GlassCard className="p-5 flex items-center justify-between gap-3">
+      <div className="flex items-start gap-3">
         <div
           className="mt-0.5 w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
           style={{ background: "rgba(187,134,252,0.1)", border: "1px solid rgba(187,134,252,0.2)" }}
@@ -189,30 +190,20 @@ function AddonRow({ addon }: { addon: Addon }) {
           <Plus size={12} color="#bb86fc" />
         </div>
         <div>
-          <h3 className="font-[family-name:var(--font-oswald)] text-lg font-semibold uppercase tracking-wide text-[#ededed]">
+          <h3 className="font-[family-name:var(--font-oswald)] text-base font-semibold uppercase tracking-wide text-[#ededed]">
             {addon.name}
           </h3>
-          {addon.description && (
-            <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] mt-0.5">
-              {addon.description}
-            </p>
-          )}
+          <span className="font-[family-name:var(--font-montserrat)] text-xs text-[#8a8f98]">
+            +{addon.durationMinutes} min
+          </span>
         </div>
       </div>
-      <div className="flex items-center gap-4 flex-shrink-0">
-        <span
-          className="font-[family-name:var(--font-montserrat)] text-xs px-2.5 py-1 rounded-full text-[#8a8f98]"
-          style={{ background: "rgba(255,255,255,0.06)" }}
-        >
-          +{addon.durationMinutes} min
-        </span>
-        <span
-          className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums w-16 text-right"
-          style={{ color: "#e8dcc4" }}
-        >
-          +${addon.price}
-        </span>
-      </div>
+      <span
+        className="font-[family-name:var(--font-montserrat)] text-base font-bold tabular-nums flex-shrink-0"
+        style={{ color: "#e8dcc4" }}
+      >
+        +${addon.price}
+      </span>
     </GlassCard>
   );
 }
