@@ -41,6 +41,9 @@ export interface PriceSummary {
   eveningSurcharge: number;
   total: number;
   hasEveningSurcharge: boolean;
+  serviceCount: number;    // 1 + number of add-ons
+  discountPercent: number; // 0, tier2, or tier3
+  discountAmount: number;  // dollars, >= 0, 2dp
 }
 
 export interface SlotGenerationInput {

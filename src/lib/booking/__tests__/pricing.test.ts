@@ -101,3 +101,78 @@ describe("calculatePrice", () => {
     expect(result.eveningSurcharge).toBe(10);
   });
 });
+
+describe("multi-service discount", () => {
+  const discount = { enabled: true, tier2Percent: 10, tier3Percent: 15 };
+
+  const svc30: ServiceSummary = { id: "svc-30", price: 30, durationMinutes: 60 };
+  const addon20: AddonSummary = { id: "addon-20", price: 20, durationMinutes: 30 };
+  const addon20b: AddonSummary = { id: "addon-20b", price: 20, durationMinutes: 30 };
+
+  it("1 service (no add-ons) → no discount", () => {
+    const result = calculatePrice(svc30, [], "10:00", discount);
+
+    expect(result.serviceCount).toBe(1);
+    expect(result.discountPercent).toBe(0);
+    expect(result.discountAmount).toBe(0);
+    expect(result.total).toBe(30);
+  });
+
+  it("2 services (1 add-on) → 10% discount", () => {
+    const result = calculatePrice(svc30, [addon20], "10:00", discount);
+
+    expect(result.serviceCount).toBe(2);
+    expect(result.discountPercent).toBe(10);
+    expect(result.discountAmount).toBe(5); // 50 * 10% = 5
+    expect(result.total).toBe(45); // 50 - 5
+  });
+
+  it("3 services (2 add-ons) → 15% discount with fractional rounding", () => {
+    const result = calculatePrice(svc30, [addon20, addon20b], "10:00", discount);
+
+    expect(result.serviceCount).toBe(3);
+    expect(result.discountPercent).toBe(15);
+    expect(result.discountAmount).toBe(10.5); // 70 * 15% = 10.5
+    expect(result.total).toBe(59.5); // 70 - 10.5
+  });
+
+  it("discount is applied BEFORE the evening surcharge", () => {
+    const result = calculatePrice(svc30, [addon20, addon20b], "20:00", discount);
+
+    expect(result.serviceCount).toBe(3);
+    expect(result.discountAmount).toBe(10.5);
+    expect(result.eveningSurcharge).toBe(10);
+    expect(result.total).toBe(69.5); // 70 - 10.5 + 10
+  });
+
+  it("enabled: false → no discount even with 3 services", () => {
+    const result = calculatePrice(
+      svc30,
+      [addon20, addon20b],
+      "10:00",
+      { enabled: false, tier2Percent: 10, tier3Percent: 15 }
+    );
+
+    expect(result.serviceCount).toBe(3);
+    expect(result.discountPercent).toBe(0);
+    expect(result.discountAmount).toBe(0);
+    expect(result.total).toBe(70);
+  });
+
+  it("omitted discount arg → no discount even with 3 services", () => {
+    const result = calculatePrice(svc30, [addon20, addon20b], "10:00");
+
+    expect(result.serviceCount).toBe(3);
+    expect(result.discountPercent).toBe(0);
+    expect(result.discountAmount).toBe(0);
+    expect(result.total).toBe(70);
+  });
+
+  it("reports serviceCount correctly (1, 2, 3)", () => {
+    expect(calculatePrice(svc30, [], "10:00", discount).serviceCount).toBe(1);
+    expect(calculatePrice(svc30, [addon20], "10:00", discount).serviceCount).toBe(2);
+    expect(
+      calculatePrice(svc30, [addon20, addon20b], "10:00", discount).serviceCount
+    ).toBe(3);
+  });
+});

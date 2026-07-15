@@ -194,6 +194,11 @@ export async function POST(request: Request) {
       { id: service.id, price: service.price, durationMinutes: service.durationMinutes },
       addons.map((a) => ({ id: a.id, price: a.price, durationMinutes: a.durationMinutes })),
       localStartTime,
+      {
+        enabled: bookingSettings.multiServiceDiscountEnabled ?? true,
+        tier2Percent: bookingSettings.discountTier2Percent ?? 10,
+        tier3Percent: bookingSettings.discountTier3Percent ?? 15,
+      },
     );
 
     // 11. Check for race-condition duplicate on calendar right before creating event
@@ -247,6 +252,8 @@ export async function POST(request: Request) {
         localEndTime,
         timeZone: "America/New_York",
         totalPrice: priceSummary.total,
+        discountPercent: priceSummary.discountPercent,
+        discountAmount: priceSummary.discountAmount,
         eveningSurcharge: priceSummary.hasEveningSurcharge,
         calendarEventId: calendarEventId ?? null,
       },

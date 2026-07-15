@@ -60,6 +60,16 @@ type Step = 0 | 1 | 2 | 3 | 4;
 const EVENING_SURCHARGE_HOUR = 20; // 8 PM
 const EVENING_SURCHARGE = 10;
 
+// Multi-service discount — display-only mirror of the server pricing engine.
+// booking-settings global is not publicly readable, so these are hardcoded
+// like EVENING_SURCHARGE above. The server re-prices authoritatively on submit.
+const DISCOUNT_ENABLED = true;
+const DISCOUNT_TIER2_PERCENT = 10; // exactly 2 services
+const DISCOUNT_TIER3_PERCENT = 15; // 3+ services
+
+// Render fractional totals cleanly; whole dollars stay unadorned.
+const money = (n: number) => (Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`);
+
 // ── Main component with Suspense for useSearchParams ───────────────────────
 export default function BookingPage() {
   return (
@@ -175,7 +185,21 @@ function BookingPageInner() {
     return h >= EVENING_SURCHARGE_HOUR;
   }, [selectedTime]);
 
-  const totalPrice = servicePrice + addonsPrice + (isSurcharge ? EVENING_SURCHARGE : 0);
+  // ── Multi-service discount (display-only; server re-prices on submit) ──
+  const subtotal = servicePrice + addonsPrice;
+  const serviceCount = selectedService ? 1 + selectedAddonIds.size : 0;
+  const discountPercent =
+    DISCOUNT_ENABLED && selectedService
+      ? serviceCount >= 3
+        ? DISCOUNT_TIER3_PERCENT
+        : serviceCount === 2
+          ? DISCOUNT_TIER2_PERCENT
+          : 0
+      : 0;
+  const discountAmount = Math.round(subtotal * discountPercent) / 100;
+
+  const totalPrice =
+    servicePrice + addonsPrice - discountAmount + (isSurcharge ? EVENING_SURCHARGE : 0);
 
   // ── Step validation ──
   const canProceed: Record<Step, boolean> = {
@@ -250,6 +274,7 @@ function BookingPageInner() {
               style={{
                 background: "rgba(187,134,252,0.15)",
                 border: "1px solid rgba(187,134,252,0.3)",
+                boxShadow: "0 0 40px rgba(187,134,252,0.15)",
               }}
             >
               <Check size={32} color="#bb86fc" />
@@ -283,6 +308,7 @@ function BookingPageInner() {
         <div className="max-w-[1200px] mx-auto">
           {/* Header */}
           <div className="text-center mb-10">
+            <p className="eyebrow mb-3">Reserve your chair</p>
             <h1
               className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-[#ededed]"
               style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}
@@ -303,9 +329,14 @@ function BookingPageInner() {
                       i <= step ? "text-[#0a0a0c]" : "text-[#8a8f98] bg-[rgba(255,255,255,0.06)]"
                     }`}
                     style={
-                      i <= step
-                        ? { background: "linear-gradient(135deg, #bb86fc, #6d5dfc)" }
-                        : undefined
+                      i === step
+                        ? {
+                            background: "linear-gradient(135deg, #bb86fc, #6d5dfc)",
+                            boxShadow: "0 0 12px rgba(187,134,252,0.35)",
+                          }
+                        : i < step
+                          ? { background: "linear-gradient(135deg, #bb86fc, #6d5dfc)" }
+                          : undefined
                     }
                   >
                     {i < step ? <Check size={14} aria-hidden="true" /> : i + 1}
@@ -333,6 +364,7 @@ function BookingPageInner() {
           <div className="lg:grid lg:grid-cols-3 lg:gap-10">
             {/* Main form */}
             <div className="lg:col-span-2">
+              <div key={step} className="step-enter">
               {/* ── Step 0: Select service ── */}
               {step === 0 && (
                 <StepSection title="Select a Service" icon={Scissors}>
@@ -580,6 +612,16 @@ function BookingPageInner() {
                     <ConfirmRow label="Email" value={email} />
                     <ConfirmRow label="Phone" value={phone} />
                     {notes && <ConfirmRow label="Notes" value={notes} />}
+                    {discountAmount > 0 && (
+                      <div className="flex justify-between items-start gap-4">
+                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] flex-shrink-0">
+                          Multi-service discount ({discountPercent}%)
+                        </span>
+                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] text-right tabular-nums">
+                          −{money(discountAmount)}
+                        </span>
+                      </div>
+                    )}
                     <div
                       className="pt-3 mt-1 border-t flex justify-between items-center"
                       style={{ borderColor: "rgba(255,255,255,0.08)" }}
@@ -591,10 +633,10 @@ function BookingPageInner() {
                         className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
                         style={{ color: "#e8dcc4" }}
                       >
-                        ${totalPrice}
+                        {money(totalPrice)}
                         {isSurcharge && (
                           <span className="font-normal text-sm text-[#8a8f98] ml-1">
-                            (incl. ${EVENING_SURCHARGE} evening)
+                            (incl. {money(EVENING_SURCHARGE)} evening)
                           </span>
                         )}
                       </span>
@@ -636,6 +678,7 @@ function BookingPageInner() {
                   </Button>
                 </StepSection>
               )}
+              </div>
 
               {/* Navigation */}
               <div className="flex items-center justify-between mt-6">
@@ -679,7 +722,14 @@ function BookingPageInner() {
                     <SummaryRow key={a.id} label={a.name} value={`+$${a.price}`} />
                   ))}
                   {isSurcharge && (
-                    <SummaryRow label="Evening rate" value={`+$${EVENING_SURCHARGE}`} accent />
+                    <SummaryRow label="Evening rate" value={`+${money(EVENING_SURCHARGE)}`} accent />
+                  )}
+                  {discountAmount > 0 && (
+                    <SummaryRow
+                      label={`Multi-service discount (${discountPercent}%)`}
+                      value={`−${money(discountAmount)}`}
+                      accent
+                    />
                   )}
                   {(selectedDate || selectedTime) && (
                     <div
@@ -709,7 +759,7 @@ function BookingPageInner() {
                       className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
                       style={{ color: "#e8dcc4" }}
                     >
-                      ${totalPrice}
+                      {money(totalPrice)}
                     </span>
                   </div>
                 </div>

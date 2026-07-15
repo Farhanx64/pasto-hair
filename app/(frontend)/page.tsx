@@ -1,31 +1,62 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Scissors, Moon, Zap, ArrowRight, Images } from "lucide-react";
+import { Scissors, Moon, Zap, ArrowRight, Images, Quote } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
+import { Reveal } from "@/components/ui/Reveal";
+import { Ambient } from "@/components/ui/Ambient";
 import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getPayload } from "payload";
 import config from "@payload-config";
-import type { Service, BookingSetting } from "@/payload-types";
+import type {
+  Service,
+  BookingSetting,
+  Testimonial,
+  GalleryItem,
+  Media,
+} from "@/payload-types";
 
 export const dynamic = "force-dynamic";
 
 async function getHomeData() {
   try {
     const payload = await getPayload({ config });
-    const [servicesResult, bookingSettings] = await Promise.all([
-      payload.find({
-        collection: "services",
-        where: { active: { equals: true } },
-        sort: "sortOrder",
-        limit: 4,
-      }),
-      payload.findGlobal({ slug: "booking-settings" }),
-    ]);
-    return { services: servicesResult.docs, bookingSettings };
+    const [servicesResult, testimonialsResult, galleryResult, bookingSettings] =
+      await Promise.all([
+        payload.find({
+          collection: "services",
+          where: { active: { equals: true } },
+          sort: "sortOrder",
+          limit: 4,
+        }),
+        payload.find({
+          collection: "testimonials",
+          where: { active: { equals: true } },
+          sort: "sortOrder",
+          limit: 3,
+        }),
+        payload.find({
+          collection: "gallery-items",
+          where: { active: { equals: true } },
+          sort: "sortOrder",
+          limit: 6,
+        }),
+        payload.findGlobal({ slug: "booking-settings" }),
+      ]);
+    return {
+      services: servicesResult.docs,
+      testimonials: testimonialsResult.docs,
+      galleryItems: galleryResult.docs,
+      bookingSettings,
+    };
   } catch {
-    return { services: [] as Service[], bookingSettings: null as BookingSetting | null };
+    return {
+      services: [] as Service[],
+      testimonials: [] as Testimonial[],
+      galleryItems: [] as GalleryItem[],
+      bookingSettings: null as BookingSetting | null,
+    };
   }
 }
 
@@ -33,33 +64,53 @@ const valueProps = [
   {
     icon: Scissors,
     headline: "Premium Cuts",
-    description: "Every cut is executed with precision. No shortcuts, no compromises.",
+    description:
+      "Every cut is executed with precision. No shortcuts, no compromises — just a finish worth showing off.",
   },
   {
     icon: Moon,
     headline: "Late Appointments",
-    description: "Night owl? We've got you. Book evening slots when other shops are closed.",
+    description:
+      "Night owl? We've got you. Book evening slots when other shops are closed.",
   },
   {
     icon: Zap,
     headline: "Clean Fades",
-    description: "Signature fades blended to perfection — consistent every single time.",
+    description:
+      "Signature fades blended to perfection — consistent every single time.",
   },
 ];
 
+/** A gallery item guaranteed to have a populated Media image with a URL. */
+type GalleryItemWithImage = GalleryItem & { image: Media };
+
 export default async function HomePage() {
-  const { services, bookingSettings } = await getHomeData();
+  const { services, testimonials, galleryItems, bookingSettings } =
+    await getHomeData();
 
   const surchargeStart = bookingSettings?.eveningSurchargeStart ?? "20:00";
   const surchargeAmount = bookingSettings?.eveningSurchargeAmount ?? 10;
   const [surchargeH] = surchargeStart.split(":").map(Number);
-  const surchargeHour12 = surchargeH === 12 ? 12 : surchargeH > 12 ? surchargeH - 12 : surchargeH;
+  const surchargeHour12 =
+    surchargeH === 12 ? 12 : surchargeH > 12 ? surchargeH - 12 : surchargeH;
   const surchargeAmPm = surchargeH >= 12 ? "PM" : "AM";
+
+  const [featuredProp, ...secondaryProps] = valueProps;
+
+  const [featuredTestimonial, ...secondaryTestimonials] = testimonials;
+
+  // Only keep gallery items whose image relation is actually populated.
+  const galleryImages = galleryItems.filter(
+    (item): item is GalleryItemWithImage =>
+      typeof item.image === "object" &&
+      item.image !== null &&
+      typeof item.image.url === "string",
+  );
 
   return (
     <PageWrapper className="flex flex-col min-h-screen">
       {/* ── Hero ── */}
-      <section className="relative flex items-center justify-center min-h-screen text-center overflow-hidden">
+      <section className="relative flex items-center justify-center min-h-dvh text-center overflow-hidden">
         {/* Video background */}
         <video
           className="absolute inset-0 w-full h-full object-cover"
@@ -100,9 +151,7 @@ export default async function HomePage() {
           >
             PASTO HAIR
           </h1>
-          <p
-            className="font-[family-name:var(--font-montserrat)] text-lg sm:text-xl text-[#ededed]/80 max-w-md"
-          >
+          <p className="font-[family-name:var(--font-montserrat)] text-lg sm:text-xl text-[#ededed]/80 max-w-md text-balance">
             Built for sharp cuts and sharper presence.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
@@ -126,7 +175,8 @@ export default async function HomePage() {
           <div
             className="w-px h-8"
             style={{
-              background: "linear-gradient(to bottom, rgba(187,134,252,0.6), transparent)",
+              background:
+                "linear-gradient(to bottom, rgba(187,134,252,0.6), transparent)",
               animation: "scrollPulse 2s ease-in-out infinite",
             }}
           />
@@ -134,49 +184,88 @@ export default async function HomePage() {
       </section>
 
       {/* ── Value props ── */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-[1200px] mx-auto">
-          <h2
-            className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-center text-[#ededed] mb-12"
-          >
-            Why Pasto Hair
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {valueProps.map(({ icon: Icon, headline, description }) => (
-              <GlassCard key={headline} className="p-8 flex flex-col items-center text-center gap-4">
+      <section className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
+        <Ambient className="top-[-140px] left-[-120px]" size={640} />
+        <div className="relative max-w-[1200px] mx-auto">
+          <Reveal className="mb-12 max-w-xl">
+            <span className="eyebrow">The standard</span>
+            <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-semibold uppercase tracking-widest text-[#ededed]">
+              Why Pasto Hair
+            </h2>
+          </Reveal>
+
+          <div className="grid gap-6 md:grid-cols-12">
+            {/* Featured prop — larger, corner icon, room to breathe */}
+            <Reveal className="md:col-span-7" delay={0}>
+              <GlassCard className="relative h-full p-8 sm:p-10 flex flex-col overflow-hidden">
                 <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center"
+                  className="absolute top-6 right-6 w-14 h-14 rounded-xl flex items-center justify-center"
                   style={{
                     background: "rgba(187,134,252,0.1)",
                     border: "1px solid rgba(187,134,252,0.2)",
                   }}
                 >
-                  <Icon size={26} color="#bb86fc" strokeWidth={1.5} />
+                  <featuredProp.icon size={26} color="#bb86fc" strokeWidth={1.5} />
                 </div>
-                <h3 className="font-[family-name:var(--font-oswald)] text-xl font-semibold uppercase tracking-wide text-[#ededed]">
-                  {headline}
-                </h3>
-                <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] leading-relaxed">
-                  {description}
-                </p>
+                <div className="mt-auto pt-16 max-w-sm">
+                  <h3 className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-wide text-[#ededed]">
+                    {featuredProp.headline}
+                  </h3>
+                  <p className="mt-3 font-[family-name:var(--font-montserrat)] text-base text-[#8a8f98] leading-relaxed">
+                    {featuredProp.description}
+                  </p>
+                </div>
               </GlassCard>
-            ))}
+            </Reveal>
+
+            {/* Two secondary props stacked in the remaining columns */}
+            <div className="md:col-span-5 flex flex-col gap-6">
+              {secondaryProps.map(({ icon: Icon, headline, description }, i) => (
+                <Reveal
+                  key={headline}
+                  className="flex-1"
+                  delay={0.08 * (i + 1)}
+                >
+                  <GlassCard className="h-full p-7 flex flex-col gap-4">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: "rgba(187,134,252,0.1)",
+                        border: "1px solid rgba(187,134,252,0.2)",
+                      }}
+                    >
+                      <Icon size={22} color="#bb86fc" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h3 className="font-[family-name:var(--font-oswald)] text-xl font-semibold uppercase tracking-wide text-[#ededed]">
+                        {headline}
+                      </h3>
+                      <p className="mt-2 font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] leading-relaxed">
+                        {description}
+                      </p>
+                    </div>
+                  </GlassCard>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── Featured services ── */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8" style={{ background: "rgba(5,5,6,0.4)" }}>
+      <section
+        className="py-24 px-4 sm:px-6 lg:px-8"
+        style={{ background: "rgba(5,5,6,0.4)" }}
+      >
         <div className="max-w-[1200px] mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
             <div>
-              <h2
-                className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-[#ededed]"
-              >
+              <h2 className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-[#ededed]">
                 Services
               </h2>
               <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] mt-1">
-                Bookings at or after {surchargeHour12}:00 {surchargeAmPm} include a ${surchargeAmount} evening rate.
+                Bookings at or after {surchargeHour12}:00 {surchargeAmPm} include a $
+                {surchargeAmount} evening rate.
               </p>
             </div>
             <Link
@@ -195,68 +284,187 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {services.map((service) => (
-                <GlassCard
-                  key={service.id}
-                  className="p-6 flex flex-col gap-4"
-                >
-                  <div className="flex-1">
-                    <h3 className="font-[family-name:var(--font-oswald)] text-lg font-semibold uppercase tracking-wide text-[#ededed]">
-                      {service.name}
-                    </h3>
-                    {service.description && (
-                      <p className="font-[family-name:var(--font-montserrat)] text-xs text-[#8a8f98] mt-1 leading-relaxed">
-                        {service.description}
-                      </p>
-                    )}
-                  </div>
+              {services.map((service, i) => (
+                <Reveal key={service.id} delay={0.08 * i}>
+                  <GlassCard className="h-full p-6 flex flex-col gap-4">
+                    <div className="flex-1">
+                      <h3 className="font-[family-name:var(--font-oswald)] text-lg font-semibold uppercase tracking-wide text-[#ededed]">
+                        {service.name}
+                      </h3>
+                      {service.description && (
+                        <p className="font-[family-name:var(--font-montserrat)] text-xs text-[#8a8f98] mt-1 leading-relaxed">
+                          {service.description}
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="flex items-center justify-between">
-                    <span
-                      className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
-                      style={{ color: "#e8dcc4" }}
-                    >
-                      ${service.price}
-                    </span>
-                    <span
-                      className="font-[family-name:var(--font-montserrat)] text-xs px-2.5 py-1 rounded-full text-[#8a8f98]"
-                      style={{ background: "rgba(255,255,255,0.06)" }}
-                    >
-                      {service.durationMinutes} min
-                    </span>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <span
+                        className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
+                        style={{ color: "#e8dcc4" }}
+                      >
+                        ${service.price}
+                      </span>
+                      <span
+                        className="font-[family-name:var(--font-montserrat)] text-xs px-2.5 py-1 rounded-full text-[#8a8f98]"
+                        style={{ background: "rgba(255,255,255,0.06)" }}
+                      >
+                        {service.durationMinutes} min
+                      </span>
+                    </div>
 
-                  <Link
-                    href={`/booking?service=${service.id}`}
-                    className="flex items-center gap-1.5 font-[family-name:var(--font-montserrat)] text-sm font-medium text-[#bb86fc] hover:text-[#ededed] transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded"
-                  >
-                    Book This <ArrowRight size={14} />
-                  </Link>
-                </GlassCard>
+                    <Link
+                      href={`/booking?service=${service.id}`}
+                      className="mt-auto flex items-center gap-1.5 font-[family-name:var(--font-montserrat)] text-sm font-medium text-[#bb86fc] hover:text-[#ededed] transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded"
+                    >
+                      Book This <ArrowRight size={14} />
+                    </Link>
+                  </GlassCard>
+                </Reveal>
               ))}
             </div>
           )}
         </div>
       </section>
 
+      {/* ── Testimonials ── */}
+      {testimonials.length > 0 && (
+        <section className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
+          <Ambient
+            className="bottom-[-160px] right-[-120px]"
+            color="champagne"
+            size={620}
+          />
+          <div className="relative max-w-[1200px] mx-auto">
+            <Reveal className="mb-12 max-w-xl">
+              <span className="eyebrow">From the chair</span>
+              <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-semibold uppercase tracking-widest text-[#ededed]">
+                The verdict
+              </h2>
+            </Reveal>
+
+            <div className="grid gap-6 md:grid-cols-12">
+              {/* Featured quote */}
+              <Reveal className="md:col-span-7" delay={0}>
+                <GlassCard className="relative h-full p-8 sm:p-10 flex flex-col">
+                  <Quote
+                    size={44}
+                    color="#bb86fc"
+                    strokeWidth={1.5}
+                    aria-hidden="true"
+                  />
+                  <blockquote className="mt-6 font-[family-name:var(--font-montserrat)] text-xl sm:text-2xl leading-relaxed text-[#ededed]">
+                    “{featuredTestimonial.quote}”
+                  </blockquote>
+                  <figcaption
+                    className="mt-auto pt-8 font-[family-name:var(--font-montserrat)] text-sm font-semibold uppercase tracking-widest"
+                    style={{ color: "#e8dcc4" }}
+                  >
+                    {featuredTestimonial.customerName}
+                  </figcaption>
+                </GlassCard>
+              </Reveal>
+
+              {/* Supporting quotes */}
+              {secondaryTestimonials.length > 0 && (
+                <div className="md:col-span-5 flex flex-col gap-6">
+                  {secondaryTestimonials.map((t, i) => (
+                    <Reveal
+                      key={t.id}
+                      className="flex-1"
+                      delay={0.08 * (i + 1)}
+                    >
+                      <GlassCard className="h-full p-7 flex flex-col">
+                        <Quote
+                          size={24}
+                          color="#bb86fc"
+                          strokeWidth={1.5}
+                          aria-hidden="true"
+                        />
+                        <blockquote className="mt-4 font-[family-name:var(--font-montserrat)] text-base leading-relaxed text-[#ededed]/90">
+                          “{t.quote}”
+                        </blockquote>
+                        <figcaption
+                          className="mt-auto pt-5 font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-widest"
+                          style={{ color: "#e8dcc4" }}
+                        >
+                          {t.customerName}
+                        </figcaption>
+                      </GlassCard>
+                    </Reveal>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ── Gallery preview ── */}
       <section className="py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-[1200px] mx-auto text-center">
-          <h2
-            className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-[#ededed] mb-4"
-          >
-            Gallery
-          </h2>
-          <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] mb-10">
-            Photos coming soon — follow us on Instagram for the latest cuts.
-          </p>
-          <GlassCard className="py-20 flex flex-col items-center gap-5">
-            <Images size={48} color="#8a8f98" strokeWidth={1} />
-            <p className="font-[family-name:var(--font-montserrat)] text-[#8a8f98]">Gallery coming soon</p>
-            <Link href="/gallery">
-              <Button variant="secondary" size="md">View Gallery</Button>
+        <div className="max-w-[1200px] mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
+            <div>
+              <span className="eyebrow">Recent work</span>
+              <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-[#ededed]">
+                Gallery
+              </h2>
+            </div>
+            <Link
+              href="/gallery"
+              className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] hover:text-[#ededed] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded"
+            >
+              View all →
             </Link>
-          </GlassCard>
+          </div>
+
+          {galleryImages.length > 0 ? (
+            <Reveal>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+                {galleryImages.map((item, i) => {
+                  const media = item.image;
+                  const alt = media.alt ?? item.title ?? "";
+                  const isFeatured = i === 0;
+                  return (
+                    <Link
+                      key={item.id}
+                      href="/gallery"
+                      className={`group relative overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.08)] aspect-square focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] ${
+                        isFeatured
+                          ? "col-span-2 md:col-span-2 md:row-span-2 md:aspect-auto"
+                          : ""
+                      }`}
+                    >
+                      <Image
+                        src={media.url as string}
+                        alt={alt}
+                        fill
+                        sizes={
+                          isFeatured
+                            ? "(min-width: 768px) 66vw, 100vw"
+                            : "(min-width: 768px) 33vw, 50vw"
+                        }
+                        className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+            </Reveal>
+          ) : (
+            <Reveal>
+              <GlassCard className="py-20 px-6 flex flex-col items-center text-center gap-5">
+                <Images size={48} color="#8a8f98" strokeWidth={1} />
+                <p className="font-[family-name:var(--font-montserrat)] text-[#8a8f98] max-w-sm">
+                  Fresh cuts are shot in the chair and posted here as they happen.
+                  New work is on the way.
+                </p>
+                <Link href="/gallery">
+                  <Button variant="secondary" size="md">View Gallery</Button>
+                </Link>
+              </GlassCard>
+            </Reveal>
+          )}
         </div>
       </section>
 

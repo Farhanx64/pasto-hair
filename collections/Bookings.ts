@@ -93,6 +93,20 @@ export const Bookings: CollectionConfig = {
       required: true,
     },
     {
+      name: "discountPercent",
+      type: "number",
+      admin: {
+        description: "Multi-service discount percent applied to this booking (0 if none).",
+      },
+    },
+    {
+      name: "discountAmount",
+      type: "number",
+      admin: {
+        description: "Dollar amount discounted from the service subtotal for this booking.",
+      },
+    },
+    {
       name: "eveningSurcharge",
       type: "checkbox",
     },

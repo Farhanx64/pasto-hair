@@ -11,7 +11,7 @@ export function GlassCard({ className = "", children, hover = true }: GlassCardP
     <div
       className={`rounded-2xl border transition-all duration-200 ${
         hover
-          ? "hover:border-[rgba(187,134,252,0.2)] hover:shadow-[0_0_20px_rgba(187,134,252,0.08)]"
+          ? "hover:border-[rgba(187,134,252,0.2)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_20px_rgba(187,134,252,0.08)]"
           : ""
       } ${className}`}
       style={{
@@ -19,6 +19,8 @@ export function GlassCard({ className = "", children, hover = true }: GlassCardP
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         border: "1px solid rgba(255,255,255,0.08)",
+        // Top-edge highlight simulates light refracting on the glass rim
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
       }}
     >
       {children}
