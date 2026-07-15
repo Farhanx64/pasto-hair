@@ -1,0 +1,55 @@
+name: Build .next (Linux)
+
+# Builds the Next.js production output on a Linux runner (no memory limits,
+# and the same OS as the cPanel host) and publishes it as a downloadable
+# tarball on a fixed "latest-build" release, so the server can pull it with:
+#   curl -L -o next-build.tar.gz \
+#     https://github.com/Farhanx64/pasto-hair/releases/download/latest-build/next-build.tar.gz
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Build-time placeholders only. Pages are force-dynamic, so no real data
+      # is baked in; the live server uses its own .env at runtime. (Confirmed
+      # NEXT_PUBLIC_SITE_URL is not referenced in source, so no localhost leaks.)
+      - name: Build
+        run: |
+          mkdir -p .data/media
+          npm run build
+        env:
+          NODE_ENV: production
+          PAYLOAD_SECRET: ci-build-placeholder-secret-not-used-at-runtime
+          DATABASE_URI: file:./.data/build.db
+          DATA_DIR: ./.data
+          MEDIA_DIR: ./.data/media
+
+      - name: Package .next (exclude cache)
+        run: tar -czf next-build.tar.gz --exclude='.next/cache' .next
+
+      - name: Publish as latest-build release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest-build -y --cleanup-tag 2>/dev/null || true
+          gh release create latest-build next-build.tar.gz \
+            --title "Latest Linux .next build" \
+            --notes "Automated Linux build of commit ${{ github.sha }}" \
+            --target "${{ github.sha }}"
