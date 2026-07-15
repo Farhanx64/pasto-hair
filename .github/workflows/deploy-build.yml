@@ -33,6 +33,7 @@ jobs:
       - name: Build
         run: |
           mkdir -p .data/media
+          npm run generate:types
           npm run build
         env:
           NODE_ENV: production
