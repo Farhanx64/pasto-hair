@@ -4,7 +4,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
-export function Footer() {
+export function Footer({ hideMobileCTA = false }: { hideMobileCTA?: boolean } = {}) {
   return (
     <>
       <footer
@@ -73,22 +73,24 @@ export function Footer() {
       </footer>
 
       {/* Mobile sticky bottom bar */}
-      <div
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 py-3"
-        style={{
-          background: "rgba(10,10,12,0.95)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
-          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
-        }}
-      >
-        <Link href="/booking" className="block">
-          <Button variant="primary" size="md" className="w-full">
-            Book Now
-          </Button>
-        </Link>
-      </div>
+      {!hideMobileCTA && (
+        <div
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 py-3"
+          style={{
+            background: "rgba(10,10,12,0.95)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+          }}
+        >
+          <Link href="/booking" className="block">
+            <Button variant="primary" size="md" className="w-full">
+              Book Now
+            </Button>
+          </Link>
+        </div>
+      )}
     </>
   );
 }

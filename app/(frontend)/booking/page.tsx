@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   Loader2,
   X,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
@@ -57,12 +59,11 @@ function todayISO(): string {
 const STEPS = ["Service", "Add-ons", "Date & Time", "Your Info", "Confirm"] as const;
 type Step = 0 | 1 | 2 | 3 | 4;
 
+// Fallback defaults for the receipt display. The live values are read from the
+// booking-settings global at runtime (see loadSettings); these are only used as
+// initial state and if that fetch fails. The server re-prices authoritatively on submit.
 const EVENING_SURCHARGE_HOUR = 20; // 8 PM
 const EVENING_SURCHARGE = 10;
-
-// Multi-service discount — display-only mirror of the server pricing engine.
-// booking-settings global is not publicly readable, so these are hardcoded
-// like EVENING_SURCHARGE above. The server re-prices authoritatively on submit.
 const DISCOUNT_ENABLED = true;
 const DISCOUNT_TIER2_PERCENT = 10; // exactly 2 services
 const DISCOUNT_TIER3_PERCENT = 15; // 3+ services
@@ -87,6 +88,16 @@ function BookingPageInner() {
   const [services, setServices] = React.useState<ServiceData[]>([]);
   const [addons, setAddons] = React.useState<AddonData[]>([]);
   const [loadingData, setLoadingData] = React.useState(true);
+
+  // Booking settings (from the booking-settings global; fallbacks match server defaults)
+  const [eveningHour, setEveningHour] = React.useState(EVENING_SURCHARGE_HOUR);
+  const [eveningAmount, setEveningAmount] = React.useState(EVENING_SURCHARGE);
+  const [discountEnabled, setDiscountEnabled] = React.useState(DISCOUNT_ENABLED);
+  const [tier2, setTier2] = React.useState(DISCOUNT_TIER2_PERCENT);
+  const [tier3, setTier3] = React.useState(DISCOUNT_TIER3_PERCENT);
+
+  // Mobile receipt bar
+  const [receiptExpanded, setReceiptExpanded] = React.useState(false);
 
   // Step state
   const [step, setStep] = React.useState<Step>(0);
@@ -140,6 +151,25 @@ function BookingPageInner() {
       }
     }
     load();
+
+    // Load booking-settings global so the receipt mirrors the admin (source of truth).
+    async function loadSettings() {
+      try {
+        const res = await fetch("/api/globals/booking-settings");
+        const data = await res.json();
+        const parsedHour = parseInt(String(data.eveningSurchargeStart ?? "").split(":")[0], 10);
+        if (Number.isFinite(parsedHour)) setEveningHour(parsedHour);
+        if (typeof data.eveningSurchargeAmount === "number")
+          setEveningAmount(data.eveningSurchargeAmount);
+        if (typeof data.multiServiceDiscountEnabled === "boolean")
+          setDiscountEnabled(data.multiServiceDiscountEnabled);
+        if (typeof data.discountTier2Percent === "number") setTier2(data.discountTier2Percent);
+        if (typeof data.discountTier3Percent === "number") setTier3(data.discountTier3Percent);
+      } catch {
+        // keep fallback defaults
+      }
+    }
+    loadSettings();
   }, []);
 
   // ── Fetch availability when date/service/addons change ──
@@ -182,24 +212,24 @@ function BookingPageInner() {
   const isSurcharge = React.useMemo(() => {
     if (!selectedTime) return false;
     const [h] = selectedTime.split(":").map(Number);
-    return h >= EVENING_SURCHARGE_HOUR;
-  }, [selectedTime]);
+    return h >= eveningHour;
+  }, [selectedTime, eveningHour]);
 
   // ── Multi-service discount (display-only; server re-prices on submit) ──
   const subtotal = servicePrice + addonsPrice;
   const serviceCount = selectedService ? 1 + selectedAddonIds.size : 0;
   const discountPercent =
-    DISCOUNT_ENABLED && selectedService
+    discountEnabled && selectedService
       ? serviceCount >= 3
-        ? DISCOUNT_TIER3_PERCENT
+        ? tier3
         : serviceCount === 2
-          ? DISCOUNT_TIER2_PERCENT
+          ? tier2
           : 0
       : 0;
   const discountAmount = Math.round(subtotal * discountPercent) / 100;
 
   const totalPrice =
-    servicePrice + addonsPrice - discountAmount + (isSurcharge ? EVENING_SURCHARGE : 0);
+    servicePrice + addonsPrice - discountAmount + (isSurcharge ? eveningAmount : 0);
 
   // ── Step validation ──
   const canProceed: Record<Step, boolean> = {
@@ -297,14 +327,14 @@ function BookingPageInner() {
             </p>
           </GlassCard>
         </div>
-        <Footer />
+        <Footer hideMobileCTA />
       </PageWrapper>
     );
   }
 
   return (
     <PageWrapper className="flex flex-col min-h-screen">
-      <div className="flex-1 py-16 px-4 sm:px-6 lg:px-8">
+      <div className="flex-1 py-16 pb-28 lg:pb-0 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1200px] mx-auto">
           {/* Header */}
           <div className="text-center mb-10">
@@ -491,8 +521,8 @@ function BookingPageInner() {
                               {slots.map((slot) => (
                                 <option key={slot} value={slot}>
                                   {formatTime12(slot)}
-                                  {parseInt(slot.split(":")[0]) >= EVENING_SURCHARGE_HOUR
-                                    ? ` (+$${EVENING_SURCHARGE} evening rate)`
+                                  {parseInt(slot.split(":")[0]) >= eveningHour
+                                    ? ` (+$${eveningAmount} evening rate)`
                                     : ""}
                                 </option>
                               ))}
@@ -636,7 +666,7 @@ function BookingPageInner() {
                         {money(totalPrice)}
                         {isSurcharge && (
                           <span className="font-normal text-sm text-[#8a8f98] ml-1">
-                            (incl. {money(EVENING_SURCHARGE)} evening)
+                            (incl. {money(eveningAmount)} evening)
                           </span>
                         )}
                       </span>
@@ -722,7 +752,7 @@ function BookingPageInner() {
                     <SummaryRow key={a.id} label={a.name} value={`+$${a.price}`} />
                   ))}
                   {isSurcharge && (
-                    <SummaryRow label="Evening rate" value={`+${money(EVENING_SURCHARGE)}`} accent />
+                    <SummaryRow label="Evening rate" value={`+${money(eveningAmount)}`} accent />
                   )}
                   {discountAmount > 0 && (
                     <SummaryRow
@@ -769,7 +799,76 @@ function BookingPageInner() {
         </div>
       </div>
 
-      <Footer />
+      {/* ── Mobile sticky receipt bar ── */}
+      <div
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pt-3"
+        style={{
+          background: "rgba(10,10,12,0.95)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        }}
+      >
+        <div className="max-w-[1200px] mx-auto">
+          {/* Expanded line items */}
+          <div
+            className="overflow-hidden transition-all duration-200"
+            style={{
+              maxHeight: receiptExpanded ? "260px" : "0px",
+              opacity: receiptExpanded ? 1 : 0,
+            }}
+          >
+            <div className="flex flex-col gap-2 pb-3">
+              <SummaryRow
+                label={selectedService?.name ?? "No service selected"}
+                value={selectedService ? `$${selectedService.price}` : "—"}
+                muted={!selectedService}
+              />
+              {selectedAddons.map((a) => (
+                <SummaryRow key={a.id} label={a.name} value={`+$${a.price}`} />
+              ))}
+              {isSurcharge && (
+                <SummaryRow label="Evening rate" value={`+${money(eveningAmount)}`} accent />
+              )}
+              {discountAmount > 0 && (
+                <SummaryRow
+                  label={`Multi-service discount (${discountPercent}%)`}
+                  value={`−${money(discountAmount)}`}
+                  accent
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Collapsed total row */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-[#ededed]">
+                Total
+              </span>
+              <span
+                className="font-[family-name:var(--font-montserrat)] text-lg font-bold tabular-nums"
+                style={{ color: "#e8dcc4" }}
+              >
+                {money(totalPrice)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReceiptExpanded((v) => !v)}
+              aria-expanded={receiptExpanded}
+              aria-label={receiptExpanded ? "Hide receipt details" : "Show receipt details"}
+              className="flex items-center justify-center w-9 h-9 rounded-full text-[#8a8f98] hover:text-[#ededed] transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)]"
+              style={{ background: "rgba(255,255,255,0.06)" }}
+            >
+              {receiptExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Footer hideMobileCTA />
     </PageWrapper>
   );
 }

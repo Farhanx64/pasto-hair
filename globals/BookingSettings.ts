@@ -2,6 +2,7 @@ import type { GlobalConfig } from "payload";
 
 export const BookingSettings: GlobalConfig = {
   slug: "booking-settings",
+  access: { read: () => true },
   admin: {
     group: "Settings",
   },
