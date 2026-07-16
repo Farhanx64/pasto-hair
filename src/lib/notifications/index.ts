@@ -353,11 +353,12 @@ export async function sendConfirmationEmail(
   booking: BookingConfirmationData,
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
 
-  if (!apiKey) {
+  if (!apiKey || !from) {
     // Dev mode stub — log instead of throwing
     console.log(
-      "[notifications] RESEND_API_KEY not configured. Would have sent confirmation email to:",
+      "[notifications] RESEND_API_KEY or EMAIL_FROM not configured. Would have sent confirmation email to:",
       booking.customerEmail,
     );
     console.log("[notifications] Booking details:", {
@@ -369,7 +370,6 @@ export async function sendConfirmationEmail(
     return;
   }
 
-  const from = process.env.EMAIL_FROM ?? "Pasto Hair <noreply@pastohair.com>";
   const resend = new Resend(apiKey);
 
   await resend.emails.send({
@@ -385,9 +385,15 @@ export async function sendOwnerNotification(
   booking: BookingConfirmationData,
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
-  const ownerEmail = process.env.EMAIL_FROM;
+  const from = process.env.EMAIL_FROM;
+  // Alerts must reach an inbox a human actually reads. EMAIL_FROM has to sit on
+  // the Resend-verified sending domain, which in practice is a no-reply address
+  // — so it is the wrong destination. OWNER_EMAIL can be any mailbox (gmail is
+  // fine: it is a recipient, never a sender). Falls back to EMAIL_FROM so an
+  // unset OWNER_EMAIL keeps the old behaviour rather than dropping the alert.
+  const ownerEmail = process.env.OWNER_EMAIL ?? from;
 
-  if (!apiKey || !ownerEmail) {
+  if (!apiKey || !from || !ownerEmail) {
     console.log(
       "[notifications] RESEND_API_KEY or EMAIL_FROM not configured. Would have sent owner notification for:",
       `${booking.customerName} — ${booking.service} on ${booking.localDate}`,
@@ -398,7 +404,7 @@ export async function sendOwnerNotification(
   const resend = new Resend(apiKey);
 
   await resend.emails.send({
-    from: ownerEmail,
+    from,
     to: ownerEmail,
     subject: `New booking: ${booking.customerName} — ${booking.service} on ${formatDate(booking.localDate)}`,
     html: buildOwnerHtml(booking),

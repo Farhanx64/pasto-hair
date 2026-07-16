@@ -180,12 +180,18 @@ GOOGLE_CALENDAR_PRIVATE_KEY=<private-key-with-literal-newlines-or-\n-escaped>
 1. Sign up at [resend.com](https://resend.com) and create an API key (Sending Access).
 2. Verify your sending domain (or use Resend's sandbox `onboarding@resend.dev` for initial testing — note: sandbox only delivers to the account owner email).
 3. Set `RESEND_API_KEY=re_...` (your API key).
-4. Set `EMAIL_FROM=noreply@yourdomain.com` — this address must belong to your verified domain. It is also used as the **owner notification recipient** (new booking alerts go to this address).
+4. Set `EMAIL_FROM` — the **sender**. Must be on the domain you verified in step 2.
+5. Set `OWNER_EMAIL` — where **new-booking alerts land**. Any mailbox; a personal gmail is fine because it is only ever a recipient, never a sender.
+
+> **Why two variables.** `EMAIL_FROM` has to live on the Resend-verified domain, so it is normally a `noreply@` address that nobody reads. Sending owner alerts there black-holes them. `OWNER_EMAIL` is the inbox a human checks. If `OWNER_EMAIL` is unset it falls back to `EMAIL_FROM` — i.e. alerts go to the no-reply. Set it.
 
 **Env vars to set:**
 ```
 RESEND_API_KEY=re_...
-EMAIL_FROM=noreply@yourdomain.com
+EMAIL_FROM=Pasto Hair <noreply@pasto.hair>
+OWNER_EMAIL=you@gmail.com
 ```
+
+Both `sendConfirmationEmail` and `sendOwnerNotification` stub to a console log when `RESEND_API_KEY` or `EMAIL_FROM` is missing, and they are called fire-and-forget from the booking route — so a misconfiguration is **silent**: bookings succeed and nobody is emailed. After wiring, always confirm with a real test booking.
 
 > When `RESEND_API_KEY` is absent, both `sendConfirmationEmail` and `sendOwnerNotification` log to the console instead of throwing, so the booking flow still completes successfully in dev.
