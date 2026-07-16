@@ -298,6 +298,117 @@ describe("generateSlots", () => {
     expect(slots).toEqual(sorted);
   });
 
+  describe("lead time and booking window", () => {
+    // 2024-06-03 16:00 UTC = 12:00 EDT on the Monday
+    const NOON_EDT = new Date("2024-06-03T16:00:00.000Z");
+    const openMonday = makeWeeklyAvailability({
+      monday: { enabled: true, shifts: [{ start: "09:00", end: "17:00" }] },
+    });
+
+    it("is not enforced when `now` is omitted (back-compat)", () => {
+      const slots = generateSlots({
+        dateStr: MONDAY,
+        totalDurationMinutes: 30,
+        weeklyAvailability: openMonday,
+        blockedDates: [],
+        busyBlocks: [],
+      });
+
+      expect(slots).toContain("09:00");
+    });
+
+    it("drops slots earlier than now on the current day", () => {
+      const slots = generateSlots({
+        dateStr: MONDAY,
+        totalDurationMinutes: 30,
+        weeklyAvailability: openMonday,
+        blockedDates: [],
+        busyBlocks: [],
+        now: NOON_EDT,
+      });
+
+      expect(slots).not.toContain("09:00");
+      expect(slots).not.toContain("11:45");
+      expect(slots).toContain("12:00");
+      expect(slots).toContain("12:15");
+    });
+
+    it("applies minLeadTimeMinutes to the cutoff", () => {
+      const slots = generateSlots({
+        dateStr: MONDAY,
+        totalDurationMinutes: 30,
+        weeklyAvailability: openMonday,
+        blockedDates: [],
+        busyBlocks: [],
+        now: NOON_EDT,
+        minLeadTimeMinutes: 90, // cutoff → 13:30
+      });
+
+      expect(slots).not.toContain("13:15");
+      expect(slots).toContain("13:30");
+    });
+
+    it("returns [] for a date entirely in the past", () => {
+      const slots = generateSlots({
+        dateStr: "2024-05-27", // the previous Monday
+        totalDurationMinutes: 30,
+        weeklyAvailability: openMonday,
+        blockedDates: [],
+        busyBlocks: [],
+        now: NOON_EDT,
+      });
+
+      expect(slots).toEqual([]);
+    });
+
+    it("returns [] beyond maxBookingWindowDays", () => {
+      const slots = generateSlots({
+        dateStr: "2024-09-02", // 91 days out, a Monday
+        totalDurationMinutes: 30,
+        weeklyAvailability: openMonday,
+        blockedDates: [],
+        busyBlocks: [],
+        now: NOON_EDT,
+        maxBookingWindowDays: 90,
+      });
+
+      expect(slots).toEqual([]);
+    });
+
+    it("allows a future day inside the window with no lead-time filtering", () => {
+      const slots = generateSlots({
+        dateStr: "2024-06-10", // next Monday
+        totalDurationMinutes: 30,
+        weeklyAvailability: openMonday,
+        blockedDates: [],
+        busyBlocks: [],
+        now: NOON_EDT,
+        minLeadTimeMinutes: 90,
+        maxBookingWindowDays: 90,
+      });
+
+      expect(slots).toContain("09:00");
+    });
+
+    it("carries a multi-day lead time across the date boundary", () => {
+      // 12:00 EDT + 1560min (26h) → cutoff 14:00 the next day
+      const slots = generateSlots({
+        dateStr: "2024-06-04", // Tuesday
+        totalDurationMinutes: 30,
+        weeklyAvailability: makeWeeklyAvailability({
+          tuesday: { enabled: true, shifts: [{ start: "09:00", end: "17:00" }] },
+        }),
+        blockedDates: [],
+        busyBlocks: [],
+        now: NOON_EDT,
+        minLeadTimeMinutes: 26 * 60,
+      });
+
+      expect(slots).not.toContain("13:45");
+      expect(slots).toContain("14:00");
+    });
+  });
+
   it("deduplicates slots from overlapping shifts", () => {
     // Two shifts that produce the same slots
     const slots = generateSlots({

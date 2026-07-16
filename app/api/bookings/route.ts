@@ -175,6 +175,9 @@ export async function POST(request: Request) {
       weeklyAvailability,
       blockedDates,
       busyBlocks,
+      now: new Date(),
+      minLeadTimeMinutes: bookingSettings.minLeadTimeMinutes ?? 0,
+      maxBookingWindowDays: bookingSettings.maxBookingWindowDays ?? undefined,
     });
 
     if (!validSlots.includes(localStartTime)) {

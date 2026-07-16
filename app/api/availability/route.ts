@@ -153,6 +153,9 @@ export async function GET(request: Request) {
       weeklyAvailability,
       blockedDates,
       busyBlocks,
+      now: new Date(),
+      minLeadTimeMinutes: bookingSettings.minLeadTimeMinutes ?? 0,
+      maxBookingWindowDays: bookingSettings.maxBookingWindowDays ?? undefined,
     });
 
     const responseBody: { slots: string[]; availabilityUnavailable?: boolean } = { slots };

@@ -52,6 +52,10 @@ export interface SlotGenerationInput {
   weeklyAvailability: WeeklyAvailability;
   blockedDates: string[];    // ["YYYY-MM-DD"]
   busyBlocks: BusyBlock[];
+  // Lead time and booking window are only enforced when `now` is supplied.
+  now?: Date;
+  minLeadTimeMinutes?: number;
+  maxBookingWindowDays?: number;
 }
 
 export interface BookingRequest {
