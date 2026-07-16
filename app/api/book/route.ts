@@ -117,6 +117,10 @@ export async function POST(request: Request) {
     const bookingSettings = await payload.findGlobal({ slug: "booking-settings" });
     const failBehavior = bookingSettings.failBehavior ?? "closed";
 
+    // BusinessSettings supplies the address/phone the confirmation email needs —
+    // a confirmation you can't navigate from isn't much of a confirmation.
+    const businessSettings = await payload.findGlobal({ slug: "business-settings" });
+
     // Build WeeklyAvailability from rules
     const defaultDay = { enabled: false, shifts: [] };
     const weeklyAvailability: WeeklyAvailability = {
@@ -287,6 +291,12 @@ export async function POST(request: Request) {
       eveningSurchargeAmount: priceSummary.eveningSurcharge,
       notes,
       calendarEventId,
+      business: {
+        name: businessSettings.businessName ?? undefined,
+        address: businessSettings.address ?? undefined,
+        phone: businessSettings.phone ?? undefined,
+        email: businessSettings.email ?? undefined,
+      },
     };
     sendConfirmationEmail(emailData).catch((err) => {
       console.error("[bookings] Confirmation email failed (non-fatal):", err);
