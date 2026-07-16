@@ -57,7 +57,34 @@ if grep -q $'\r' .env; then
   sed -i 's/\r$//' .env
   ok "stripped CRLF from .env"
 fi
-set -a; source .env; set +a
+
+# Parse .env rather than `source` it. dotenv is NOT bash: a perfectly valid line
+# like
+#     EMAIL_FROM=Pasto Hair <noreply@pasto.hair>
+# is a bash syntax error — unquoted spaces, and `<` is a redirect. Sourcing dies
+# there and silently leaves every later variable unset, which is exactly the trap
+# this script exists to remove.
+load_env() {
+  local line key val
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+    [[ "$line" =~ ^[[:space:]]*(#|$) ]] && continue
+    [[ "$line" != *=* ]] && continue
+    key="${line%%=*}"
+    val="${line#*=}"
+    key="${key#"${key%%[![:space:]]*}"}"   # ltrim
+    key="${key%"${key##*[![:space:]]}"}"   # rtrim
+    [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    # strip one layer of surrounding quotes, if present
+    if [[ ${#val} -ge 2 && "$val" == \"*\" ]] || [[ ${#val} -ge 2 && "$val" == \'*\' ]]; then
+      val="${val:1:${#val}-2}"
+    fi
+    export "$key=$val"
+  done < .env
+}
+load_env
+ok "env loaded"
+
 SITE="${NEXT_PUBLIC_SITE_URL:-}"
 [[ -n "$SITE" ]] || die "NEXT_PUBLIC_SITE_URL not set in .env"
 ok "site $SITE"

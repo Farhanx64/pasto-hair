@@ -188,9 +188,11 @@ GOOGLE_CALENDAR_PRIVATE_KEY=<private-key-with-literal-newlines-or-\n-escaped>
 **Env vars to set:**
 ```
 RESEND_API_KEY=re_...
-EMAIL_FROM=Pasto Hair <noreply@pasto.hair>
+EMAIL_FROM="Pasto Hair <noreply@pasto.hair>"
 OWNER_EMAIL=you@gmail.com
 ```
+
+> **Keep the quotes on `EMAIL_FROM`.** The value has spaces and angle brackets. That's fine for dotenv and fine for the app, but `source .env` from bash reads `<` as a redirect and errors out — then **silently stops loading every variable below that line**, so `OWNER_EMAIL` and `RESEND_API_KEY` come back empty with no clue why. `scripts/deploy.sh` parses `.env` instead of sourcing it and doesn't care either way, but anything you run by hand does.
 
 Both `sendConfirmationEmail` and `sendOwnerNotification` stub to a console log when `RESEND_API_KEY` or `EMAIL_FROM` is missing, and they are called fire-and-forget from the booking route — so a misconfiguration is **silent**: bookings succeed and nobody is emailed. After wiring, always confirm with a real test booking.
 
