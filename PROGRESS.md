@@ -9,8 +9,10 @@
 Deployed to Namecheap Stellar shared hosting (cPanel, **LiteSpeed** web server — not Apache — with the CloudLinux/Phusion Passenger Node loader `lsnode.js`). Host: `server377`, user `pastvucd`, app root `/home/pastvucd/repositories/pasto-hair`, data dir `/home/pastvucd/pasto-data`.
 
 ### Deploy model that works
-- **Build locally, upload `.next`** (shared-host LVE memory limits kill `next build` on the server). Build with `next build --webpack` (Turbopack panics on the venv symlinks). Zip excludes `.next/cache` **and** `.next/dev` → ~3.9 MB (a stray `.next/dev/` from a past `next dev` had bloated it to 240 MB).
-- Upload `next-build.zip` to app root via File Manager → `rm -rf .next && unzip -q next-build.zip`.
+- **Build `.next` on a GitHub Actions Linux runner, server pulls the tarball** (`.github/workflows/deploy-build.yml`, commit `1be51ae`). Shared-host LVE memory limits kill `next build` on the server, and a Windows-built `.next` is **not portable** to Linux (throws "client reference manifest does not exist"). The workflow runs on `ubuntu-latest`, generates Payload types, builds, then publishes `next-build.tar.gz` (excluding `.next/cache`) as the `latest-build` release; the server curls it.
+- Build uses `next build --webpack` (Turbopack panics on the venv symlinks).
+
+> **Superseded:** the original model was "build locally on Windows, upload `next-build.zip` via File Manager, `rm -rf .next && unzip`". Kept here only as history — do **not** build on Windows.
 - Restart authoritatively with the CloudLinux selector (NOT `touch tmp/restart.txt`, which is unreliable on LiteSpeed):
   ```
   /sbin/cloudlinux-selector restart --json --interpreter nodejs \
@@ -100,7 +102,7 @@ Pure TypeScript modules in `src/lib/booking/`:
 | `idempotency.ts` | UUID v4 generation + duplicate submissionId detection |
 | `index.ts` | Re-exports all modules |
 
-**56 unit tests — all passing.** Test runner: Vitest.
+**70 unit tests across 4 files — all passing** (as of 2026-07-15; was 56 at the time of PR #8, grew with later phases). Test runner: Vitest — `npx vitest run`.
 
 ### Phase 4 — API Routes (commit `de3e01a`, PR #9)
 - `GET /api/availability?date=&serviceId=&addonIds=` — reads Payload rules + Google Calendar freebusy → returns valid slots. Respects `failBehavior` (open/closed) from BookingSettings global.
@@ -148,9 +150,24 @@ Pure TypeScript modules in `src/lib/booking/`:
 
 ---
 
-## Current `main` — 7 commits
+## Current `main` — 27 commits
+
+Most recent first (see `git log` for the full list; the eight below the rule are the original Phase 1–6 scaffold):
 
 ```
+0a8a425  Booking receipt reads admin global; add mobile sticky receipt
+69fd295  Generate Payload types in CI before building
+1be51ae  Add GitHub Actions workflow to build .next on Linux
+13690ad  Add migration for discount schema fields
+612fc30  Redesign frontend and revamp pricing with multi-service discount
+931f0f4  docs: log cPanel deployment, fixes, and OAuth calendar in PROGRESS.md
+61f0dba  feat: OAuth2 user-delegated calendar auth so bookings can invite attendees
+ebc8e4a  chore: gitignore deployment build artifacts (next-build.zip, *.zip)
+f7a89a5  fix: public read access for services and addons collections
+69e115a  fix: booking page hits /api/services not /api/payload/services
+be412de  docs: document LiteSpeed TLA/socket gotchas and fix stale calendar setup
+dad560b  chore: drop legacy url.parse, let Next handle URL parsing
+---
 4710543  fix: ui-ux-pro-max audit — accessibility, touch targets, animation, focus
 6be741b  feat: public pages and UI (#5)
 acdd4ab  feat: complete Google Calendar + Resend integrations (#6)
@@ -165,34 +182,51 @@ d90ed71  feat: ui-ux-pro-max design system
 
 ## What Still Needs Doing
 
+> **Verified against the live site + git on 2026-07-15.** Several items below were stale and have been corrected — see "Corrections" at the end of this section.
+
 ### Deploy (DONE)
-- [x] Deployed to Namecheap cPanel (Node 24.15.0) — site live at https://pasto.hair
+- [x] Deployed to Namecheap cPanel — site live at https://pasto.hair (live `/healthz` reports Node v24.16.0)
 - [x] Node 24 selected in cPanel "Setup Node.js App"
 - [x] Private data dir created: `/home/pastvucd/pasto-data/media/`
 - [x] Env vars set (`.env` + `.htaccess` SetEnv)
 - [x] Migrations run + DB seeded on server
 - [x] `/healthz` returns `{"status":"ok","db":"reachable"}`
-- [ ] **Create first Payload admin user at `/admin`** (still pending — `users: 0`)
+- [x] **First Payload admin user created** — `/api/users/init` → `{"initialized":true}`, `users: 1`. First-user creation is sealed.
 
 ### Integrations
 - [x] **Google Calendar — WORKING via OAuth2.** Service account on a personal Gmail (`farfarvip2003@gmail.com`) **cannot invite attendees** (needs Workspace Domain-Wide Delegation → 403 on `events.insert` with attendees). Switched to OAuth2 user delegation: OAuth Desktop client (ID `431451096136-...`), consent screen **published to Production** (so refresh token doesn't expire), one-time consent as the owner → refresh token in `.env` as `GOOGLE_OAUTH_CLIENT_ID/_CLIENT_SECRET/_REFRESH_TOKEN`. `getCalendarClient()` prefers OAuth, falls back to service account. Target calendar = **"CUTS"** (`27b3...@group.calendar.google.com`).
-- [ ] Resend: create API key, verify sending domain, set `RESEND_API_KEY` + `EMAIL_FROM` (booking still completes without it — emails just log to console)
-- [ ] Footer social links: replace placeholder `href` values with real Instagram/Facebook/X URLs
+- [ ] 🔴 **Resend — NOT configured. The live site sends NO emails.** `sendConfirmationEmail` / `sendOwnerNotification` (`src/lib/notifications/index.ts`) fall back to a console stub when `RESEND_API_KEY` is missing, and both are called fire-and-forget from `app/api/bookings/route.ts` — so a booking **succeeds silently**: the customer gets no confirmation and the owner gets no notification. Fix: create the API key, verify the sending domain, set `RESEND_API_KEY` + `EMAIL_FROM` in `.env` **and** the `.htaccess` `SetEnv` block, restart via cloudlinux-selector. **This is the biggest user-visible gap.**
+- [ ] Footer social links: replace placeholder `href` values with real Instagram/Facebook/X URLs (`components/layout/Footer.tsx:41,50,57`)
 
 ### Security / cleanup follow-ups
-- [ ] **Rotate the OAuth refresh token** — it was printed in the terminal/chat during setup. Revoke at myaccount.google.com/permissions, re-run `oauth-consent.cjs`, restart. (Risk is low — transcript only, not a public repo.)
-- [ ] Rotate the **Google service-account key** — its private key was exposed earlier (likely already auto-revoked by Google secret-scanning; OAuth is now the active path anyway).
-- [ ] Delete server helper/test scripts: `test-*.cjs`, `oauth-consent.cjs`, `update-calendar-key.cjs`, `inject-htaccess-env.cjs`, and the "TEST …" events on the CUTS calendar.
-- [ ] Delete junk file `zi2NTVxv` (268 MB) in repo root.
+- [ ] 🔴 **Rotate the OAuth refresh token** — it was printed in the terminal/chat during setup. Revoke at myaccount.google.com/permissions, re-run `oauth-consent.cjs`, restart. (Risk is low — transcript only, not a public repo.)
+- [ ] 🔴 Rotate the **Google service-account key** — its private key was exposed earlier (likely already auto-revoked by Google secret-scanning; OAuth is the active path — `getCalendarClient()` prefers OAuth and only falls back to the SA — so this is a dormant fallback credential).
+- [ ] Delete server helper/test scripts: `test-*.cjs`, `oauth-consent.cjs`, `update-calendar-key.cjs`, `inject-htaccess-env.cjs`, and the "TEST …" events on the CUTS calendar. (Verified: none are tracked in the repo — server-side only. App root is outside `public_html`, so they are not web-served.)
+- [ ] **Rate limiting + anti-automation on `POST /api/bookings`** — the endpoint is unauthenticated with no throttle or CAPTCHA. A script can book out every open slot (business DoS), flood the owner's inbox, and burn Resend/Google Calendar quota. Highest-severity code finding of the 2026-07-15 audit. (Was previously filed under "Future phases" as "CSRF + rate limiting".)
+- [ ] Slot double-booking TOCTOU — no atomic guard between the freebusy check and create in `app/api/bookings/route.ts`. Two concurrent requests with different `submissionId`s can both take the same slot. Fix: compound unique index on (`localDate`,`localStartTime`,`status='confirmed'`).
+- [ ] Payload hardening — set `serverURL` to the prod HTTPS origin, add it to `csrf`, set `auth.cookies.secure: true` on `Users` (Payload defaults to `secure: false`).
+- [ ] `scripts/seed.ts:153` hardcodes the owner's Gmail — scrub if the repo ever goes public.
 
 ### Future phases
-- [ ] Real gallery — upload photos/videos in Payload admin, wire `galleryItems` collection to gallery page
+- [ ] Real gallery **content** — the page is already wired (`app/(frontend)/gallery/page.tsx` reads `gallery-items` via Payload); it currently shows demo placeholders from `scripts/seed-demo-content.ts`. Upload real photos/videos in Payload admin.
 - [ ] Multi-staff support (Phase 2 spec)
 - [ ] Booking reschedule/cancel flow
 - [ ] Testimonials section on homepage
 - [ ] Customer reminders (Phase 3 spec)
-- [ ] CSRF protection + rate limiting on booking endpoint (Phase 2 spec)
 - [ ] Audit log for admin settings changes
+
+### Fixed 2026-07-15 (audit follow-ups)
+- [x] **Lead time + booking window now enforced** — `generateSlots` previously never compared against "now", so past-dated and unbounded-future bookings were accepted. `minLeadTimeMinutes` / `maxBookingWindowDays` (defined in BookingSettings but read by nothing) are now threaded from the global into both `/api/availability` and `/api/bookings`. Enforcement is opt-in via a `now` param so the existing pure-function tests stay deterministic.
+- [x] **Email HTML escaping** — `customerName` / `notes` / `phone` reached the owner-notification template unescaped, allowing HTML (e.g. a phishing link) to be injected into the owner's inbox from the public booking form. All user-supplied values now run through `esc()`; `mailto:`/`tel:` hrefs use `encodeURI`.
+- [x] **`/healthz` trimmed** — it publicly returned the user count, Node version, and raw error messages. Now returns `{status:"ok",db:"reachable"}` or a bare `{status:"error"}` with 503; details go to the server log.
+
+### Corrections to this log (2026-07-15)
+This file had drifted ~20 commits behind reality. Fixed above:
+- Claimed the first admin user was still pending (`users: 0`) — **false**, one exists and first-user creation is sealed. (Had it been true it would have been critical: an unclaimed Payload admin seat on a live site is claimable by anyone.)
+- Claimed the gallery was an unwired placeholder grid — it reads Payload; only the content is demo data.
+- Listed junk file `zi2NTVxv` for deletion — already gone.
+- Said "Current main — 7 commits" — actually 27.
+- Documented the build-locally-and-upload deploy model — superseded by the Actions Linux build.
 
 ---
 
