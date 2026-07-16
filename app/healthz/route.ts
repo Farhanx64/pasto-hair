@@ -6,26 +6,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const startedAt = Date.now();
   try {
+    // Cheapest query that proves the DB is actually reachable. The count itself
+    // is deliberately not returned — see below.
     const payload = await getPayload({ config });
-    const users = await payload.count({ collection: "users" });
-    return Response.json({
-      status: "ok",
-      db: "reachable",
-      runtime: "nodejs",
-      node: process.version,
-      users: users.totalDocs,
-      ms: Date.now() - startedAt,
-      time: new Date().toISOString(),
-    });
+    await payload.count({ collection: "users" });
+    return Response.json({ status: "ok", db: "reachable" });
   } catch (err) {
-    return Response.json(
-      {
-        status: "error",
-        message: err instanceof Error ? err.message : String(err),
-      },
-      { status: 500 },
-    );
+    // Details stay in the server log. The response body is public, so it must
+    // not carry user counts, the Node version, or raw driver/path errors.
+    console.error("[healthz] Health check failed:", err);
+    return Response.json({ status: "error" }, { status: 503 });
   }
 }
