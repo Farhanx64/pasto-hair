@@ -19,12 +19,22 @@ Deployed to Namecheap Stellar shared hosting (cPanel, **LiteSpeed** web server �
 - Build uses `next build --webpack` (Turbopack panics on the venv symlinks).
 
 > **Superseded:** the original model was "build locally on Windows, upload `next-build.zip` via File Manager, `rm -rf .next && unzip`". Kept here only as history — do **not** build on Windows.
-- Restart authoritatively with the CloudLinux selector (NOT `touch tmp/restart.txt`, which is unreliable on LiteSpeed):
+### Deploying — one command
+
+```bash
+~/repositories/pasto-hair/scripts/deploy.sh
+```
+
+Pull → migrate → fetch tarball → restart → verify, each step checked rather than assumed. Fails loudly instead of half-deploying. Everything below is what it automates, kept for when it breaks.
+
+- **Restarting: kill the process, don't ask politely.** `cloudlinux-selector restart` returns `{"result":"success"}` while leaving the old process running — observed twice, once serving a cached Payload config for 1h46m. `touch tmp/restart.txt` is likewise unreliable on LiteSpeed. What works deterministically:
   ```
-  /sbin/cloudlinux-selector restart --json --interpreter nodejs \
-    --app-root repositories/pasto-hair --domain pasto.hair
+  pkill -u $(id -u) -f "lsnode:$HOME/repositories/pasto-hair"
+  curl -s https://pasto.hair/healthz    # LiteSpeed spawns Node on demand
   ```
-  ⚠️ The `--app-root`/`--domain` must be exact — a typo returns `{"result":"success"}` but restarts nothing.
+  An absent `lsnode` process right after the kill is **normal** — nothing exists until a request arrives.
+- **Verify the restart actually happened**, whatever it reported: `ps -u <user> -o pid,etime,command | grep lsnode` — `etime` must have reset.
+- **`/healthz` is the version tell.** It returns exactly `{"status":"ok","db":"reachable"}`. Anything carrying `users`/`node`/`ms` is the pre-2026-07-16 build, i.e. the restart didn't take.
 - App stderr (crash/runtime errors) → `<app-root>/stderr.log`. Check it first when the site errors but the app runs manually.
 
 ### Bugs fixed during deploy (root causes)
