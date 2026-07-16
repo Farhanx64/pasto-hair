@@ -63,7 +63,7 @@ npm run build
 
 # 3. On the server via SSH:
 mkdir -p /home/<user>/pasto-data/media
-touch tmp/restart.txt   # triggers Passenger reload
+pkill -u "$(id -u)" -f "lsnode:$HOME/repositories/pasto-hair"   # then curl the site to respawn
 ```
 
 ### Option B — Build on server via SSH
@@ -73,24 +73,42 @@ ssh user@pasto.hair
 cd ~/public_html/pasto-hair
 npm install
 npm run build
-touch tmp/restart.txt
+pkill -u "$(id -u)" -f "lsnode:$HOME/repositories/pasto-hair"   # then curl the site to respawn
 ```
+
+> In practice the server can't `npm run build` (LVE memory limits OOM-kill it) — this is why the real pipeline builds `.next` on GitHub Actions. See "Deploying — one command" above.
 
 > Note: Shared hosting may have LVE (CPU/memory) limits that kill `next build`.
 > If it fails, use Option A (build locally, upload).
 
 ---
 
-## Restart After Code Changes
-
-On LiteSpeed/CloudLinux, `touch tmp/restart.txt` is unreliable. Use the CloudLinux selector to force a clean restart:
+## Deploying — one command
 
 ```bash
-/sbin/cloudlinux-selector restart --json --interpreter nodejs \
-  --app-root repositories/pasto-hair --domain pasto.hair
+~/repositories/pasto-hair/scripts/deploy.sh
 ```
 
-`touch ~/repositories/pasto-hair/tmp/restart.txt` may work as a lighter reload, but the selector command is authoritative.
+Pull → migrate → fetch the Linux build tarball → restart → verify. Each step is checked; it fails loudly rather than half-deploying, and won't report success unless `/healthz` returns the new-build body. Prefer it. The rest of this section is what it automates, for when you need to do it by hand.
+
+## Restart After Code Changes — kill the process, don't ask
+
+**Neither `touch tmp/restart.txt` nor `cloudlinux-selector restart` reliably cycles the app.** The selector returns `{"result":"success"}` while leaving the old process running — observed twice, once serving a cached Payload config for **1h46m**, and a typo in `--app-root`/`--domain` returns success while restarting nothing. So it can't even be trusted to fail.
+
+What works deterministically is to kill the Node process and let LiteSpeed respawn it on the next request:
+
+```bash
+pkill -u "$(id -u)" -f "lsnode:$HOME/repositories/pasto-hair"
+curl -s https://pasto.hair/healthz    # LiteSpeed spawns Node on demand
+```
+
+- **After the kill, `ps` showing no `lsnode` process is normal** — nothing exists until a request arrives. That's why you curl the site.
+- **Always verify the restart actually happened**, whatever any command reported:
+  ```bash
+  ps -u <user> -o pid,etime,command | grep lsnode
+  ```
+  `etime` must have reset to near-zero. If it didn't, the restart didn't take.
+- **`/healthz` is the version tell.** It returns exactly `{"status":"ok","db":"reachable"}`; a body carrying `users`/`node`/`ms` is the old build still serving.
 
 ---
 
