@@ -319,7 +319,7 @@ export async function findEventBySubmissionId(
 }
 
 // ---------------------------------------------------------------------------
-// Legacy interface kept for backward compatibility with app/api/bookings/route.ts
+// Legacy interface kept for backward compatibility with app/api/book/route.ts
 // ---------------------------------------------------------------------------
 
 export interface CalendarEventInput {
@@ -338,7 +338,7 @@ export interface CalendarEventInput {
 }
 
 /**
- * Convenience wrapper used by app/api/bookings/route.ts.
+ * Convenience wrapper used by app/api/book/route.ts.
  * Converts legacy CalendarEventInput → CreateEventInput and delegates.
  */
 export async function createCalendarEventFromLegacy(

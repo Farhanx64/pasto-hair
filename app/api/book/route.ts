@@ -8,6 +8,15 @@ import { calculatePrice } from "@/src/lib/booking/pricing";
 import { getBusyBlocks, createCalendarEventFromLegacy, findEventBySubmissionId } from "@/src/lib/calendar/index";
 import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifications/index";
 
+// Public booking submission endpoint.
+//
+// This lives at /api/book, NOT /api/bookings. Route groups don't affect URLs, so
+// `app/api/bookings/route.ts` would sit on the same path as Payload's REST
+// endpoint for the `bookings` collection (served by `app/(payload)/api/[...slug]`),
+// and Next prefers the static segment over the catch-all. That shadowed the whole
+// collection: every non-POST verb returned 405, so the admin panel could not
+// delete or edit a booking. Do not rename this back to `bookings`.
+
 // Force the full Node.js runtime (never edge) — required on cPanel/Passenger.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

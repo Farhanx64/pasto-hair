@@ -266,7 +266,9 @@ function BookingPageInner() {
     };
 
     try {
-      const res = await fetch("/api/bookings", {
+      // /api/book, not /api/bookings — the latter is Payload's REST path for the
+      // bookings collection, and a static route there shadows it.
+      const res = await fetch("/api/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

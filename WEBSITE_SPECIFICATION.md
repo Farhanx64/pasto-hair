@@ -268,7 +268,7 @@ Recommended application shape:
 - `app/(site)/gallery/page.tsx` - Gallery page, rendered from Payload gallery items.
 - `app/(booking)/booking/page.tsx` - Booking experience.
 - `app/api/availability/route.ts` - Public availability endpoint.
-- `app/api/bookings/route.ts` - Public booking submission endpoint.
+- `app/api/book/route.ts` - Public booking submission endpoint.
 - `app/(payload)/admin` or Payload's configured admin route - CMS/admin interface.
 - `src/lib/booking` - Slot generation, pricing, surcharge, conflict, and idempotency logic.
 - `src/lib/calendar` - Google Calendar integration.

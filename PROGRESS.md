@@ -45,10 +45,11 @@ Deployed to Namecheap Stellar shared hosting (cPanel, **LiteSpeed** web server �
 
 ## Repo
 
-**github.com/Farhanx64/pasto-hair-modern** (primary)
-**github.com/Farhanx64/pasto-hair** — `modernized` branch (mirror, force-pushed 2026-06-08)
+**github.com/Farhanx64/pasto-hair** — the one and only repo. It is `origin`, it is what cPanel Git pulls, and it is where the Actions workflow publishes the `latest-build` release. **This repo is public.**
 
-Old site reference: `/home/pasto/pasto-hair/old/` (cloned from github.com/Farhanx64/pasto-hair `main` — do not copy its markup)
+> Previously this section claimed `pasto-hair-modern` was "primary" and this repo a mirror. That was **wrong** — verified 2026-07-15: `git remote -v` points here, and the GitHub API returns 404 for `pasto-hair-modern`.
+
+The old static site lives on the `old` branch — do not copy its markup, and do not treat anything in it as safe to reuse.
 
 ---
 
@@ -112,7 +113,7 @@ Pure TypeScript modules in `src/lib/booking/`:
 
 ### Phase 4 — API Routes (commit `de3e01a`, PR #9)
 - `GET /api/availability?date=&serviceId=&addonIds=` — reads Payload rules + Google Calendar freebusy → returns valid slots. Respects `failBehavior` (open/closed) from BookingSettings global.
-- `POST /api/bookings` — full server-side validation, idempotency check, slot revalidation, calendar event creation, Payload booking record, Resend confirmation email.
+- `POST /api/book` — full server-side validation, idempotency check, slot revalidation, calendar event creation, Payload booking record, Resend confirmation email.
 
 ### Phase 6 — Integrations (commit `acdd4ab`, PR #10)
 - `src/lib/calendar/index.ts` — Google Calendar service account integration, DST-safe NY→UTC conversion, `extendedProperties` idempotency, `import "server-only"` guard
@@ -134,7 +135,7 @@ Pure TypeScript modules in `src/lib/booking/`:
 - `/` — Video hero (hero-video.webm), value props, featured services from Payload, gallery preview, footer
 - `/pricing` — Server-rendered from Payload services + addons, evening surcharge note
 - `/gallery` — Placeholder grid with CTA (real gallery = Phase 3 expansion)
-- `/booking` — 5-step client flow: service → addons → date/time → customer info → confirm. Live availability fetch, live price with surcharge, submit to `/api/bookings`, success screen.
+- `/booking` — 5-step client flow: service → addons → date/time → customer info → confirm. Live availability fetch, live price with surcharge, submit to `/api/book`, success screen.
 
 **Assets copied from old site:**
 - `public/hero-video.webm`
@@ -201,7 +202,7 @@ d90ed71  feat: ui-ux-pro-max design system
 
 ### Integrations
 - [x] **Google Calendar — WORKING via OAuth2.** A service account on a personal Gmail **cannot invite attendees** (that needs Workspace Domain-Wide Delegation → 403 on `events.insert` with attendees). Switched to OAuth2 user delegation: an OAuth Desktop client with the consent screen **published to Production** (so the refresh token doesn't expire), plus a one-time consent as the calendar owner → credentials live in `.env` as `GOOGLE_OAUTH_CLIENT_ID` / `_CLIENT_SECRET` / `_REFRESH_TOKEN`. `getCalendarClient()` prefers OAuth and falls back to the service account. Target calendar ID is set via `GOOGLE_CALENDAR_ID`. (Account identifiers are in the private notes.)
-- [ ] 🔴 **Resend — NOT configured. The live site sends NO emails.** `sendConfirmationEmail` / `sendOwnerNotification` (`src/lib/notifications/index.ts`) fall back to a console stub when `RESEND_API_KEY` is missing, and both are called fire-and-forget from `app/api/bookings/route.ts` — so a booking **succeeds silently**: the customer gets no confirmation and the owner gets no notification. Fix: create the API key, verify the sending domain, set `RESEND_API_KEY` + `EMAIL_FROM` in `.env` **and** the `.htaccess` `SetEnv` block, restart via cloudlinux-selector. **This is the biggest user-visible gap.**
+- [ ] 🔴 **Resend — NOT configured. The live site sends NO emails.** `sendConfirmationEmail` / `sendOwnerNotification` (`src/lib/notifications/index.ts`) fall back to a console stub when `RESEND_API_KEY` is missing, and both are called fire-and-forget from `app/api/book/route.ts` — so a booking **succeeds silently**: the customer gets no confirmation and the owner gets no notification. Fix: create the API key, verify the sending domain, set `RESEND_API_KEY` + `EMAIL_FROM` in `.env` **and** the `.htaccess` `SetEnv` block, restart via cloudlinux-selector. **This is the biggest user-visible gap.**
 - [ ] Footer social links: replace placeholder `href` values with real Instagram/Facebook/X URLs (`components/layout/Footer.tsx:41,50,57`)
 
 ### Security / cleanup follow-ups
@@ -225,7 +226,7 @@ d90ed71  feat: ui-ux-pro-max design system
 - [ ] Audit log for admin settings changes
 
 ### Fixed 2026-07-15
-- [x] **Lead time + booking window enforced.** `minLeadTimeMinutes` / `maxBookingWindowDays` were defined in BookingSettings but read by nothing; they're now threaded from the global into both `/api/availability` and `/api/bookings`, and `generateSlots` compares against the current time. Enforcement is opt-in via a `now` param so the pure-function tests stay deterministic. +7 tests.
+- [x] **Lead time + booking window enforced.** `minLeadTimeMinutes` / `maxBookingWindowDays` were defined in BookingSettings but read by nothing; they're now threaded from the global into both `/api/availability` and `/api/book`, and `generateSlots` compares against the current time. Enforcement is opt-in via a `now` param so the pure-function tests stay deterministic. +7 tests.
 - [x] **Email templates escape user input.** All user-supplied values run through `esc()`; `mailto:`/`tel:` hrefs use `encodeURI`.
 - [x] **`/healthz` returns a minimal body.** `{status:"ok",db:"reachable"}` on success, bare `{status:"error"}` + 503 on failure; detail goes to the server log.
 - [x] **Owner notifications go to `OWNER_EMAIL`,** not to `EMAIL_FROM` (which must sit on the verified sending domain and is therefore a no-reply). Falls back to `EMAIL_FROM` when unset.
