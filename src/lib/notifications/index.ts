@@ -31,6 +31,20 @@ export interface BookingConfirmationData {
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Escape a user-supplied value for interpolation into email HTML.
+ * customerName / notes / phone reach these templates straight from the public
+ * booking request, so they must never be trusted as markup.
+ */
+function esc(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function formatDate(dateStr: string): string {
   // Parse as local date to avoid UTC offset issues
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -79,7 +93,7 @@ function buildCustomerHtml(data: BookingConfirmationData): string {
     addons.length > 0
       ? `<tr>
         <td style="padding:8px 0;color:#555;">Add-ons</td>
-        <td style="padding:8px 0;">${addons.join(", ")}</td>
+        <td style="padding:8px 0;">${esc(addons.join(", "))}</td>
       </tr>`
       : "";
 
@@ -96,13 +110,13 @@ function buildCustomerHtml(data: BookingConfirmationData): string {
 </head>
 <body style="font-family:sans-serif;color:#222;max-width:600px;margin:0 auto;padding:24px;">
   <h1 style="font-size:24px;margin-bottom:8px;">Appointment Confirmed</h1>
-  <p>Hi ${customerName}, your appointment at <strong>Pasto Hair</strong> is confirmed.</p>
+  <p>Hi ${esc(customerName)}, your appointment at <strong>Pasto Hair</strong> is confirmed.</p>
 
   <table style="width:100%;border-collapse:collapse;margin:20px 0;">
     <tbody>
       <tr>
         <td style="padding:8px 0;color:#555;width:40%;">Service</td>
-        <td style="padding:8px 0;font-weight:bold;">${service}</td>
+        <td style="padding:8px 0;font-weight:bold;">${esc(service)}</td>
       </tr>
       ${addonsRow}
       <tr>
@@ -201,7 +215,7 @@ function buildOwnerHtml(data: BookingConfirmationData): string {
     addons.length > 0
       ? `<tr>
         <td style="padding:8px 0;color:#555;">Add-ons</td>
-        <td style="padding:8px 0;">${addons.join(", ")}</td>
+        <td style="padding:8px 0;">${esc(addons.join(", "))}</td>
       </tr>`
       : "";
 
@@ -215,14 +229,14 @@ function buildOwnerHtml(data: BookingConfirmationData): string {
   const notesRow = notes
     ? `<tr>
         <td style="padding:8px 0;color:#555;">Notes</td>
-        <td style="padding:8px 0;">${notes}</td>
+        <td style="padding:8px 0;">${esc(notes)}</td>
       </tr>`
     : "";
 
   const calendarRow = calendarEventId
     ? `<tr>
         <td style="padding:8px 0;color:#555;">Calendar Event</td>
-        <td style="padding:8px 0;font-size:12px;word-break:break-all;">${calendarEventId}</td>
+        <td style="padding:8px 0;font-size:12px;word-break:break-all;">${esc(calendarEventId)}</td>
       </tr>`
     : "";
 
@@ -241,19 +255,19 @@ function buildOwnerHtml(data: BookingConfirmationData): string {
     <tbody>
       <tr>
         <td style="padding:8px 0;color:#555;width:40%;">Customer</td>
-        <td style="padding:8px 0;font-weight:bold;">${customerName}</td>
+        <td style="padding:8px 0;font-weight:bold;">${esc(customerName)}</td>
       </tr>
       <tr>
         <td style="padding:8px 0;color:#555;">Email</td>
-        <td style="padding:8px 0;"><a href="mailto:${customerEmail}">${customerEmail}</a></td>
+        <td style="padding:8px 0;"><a href="mailto:${encodeURI(customerEmail)}">${esc(customerEmail)}</a></td>
       </tr>
       <tr>
         <td style="padding:8px 0;color:#555;">Phone</td>
-        <td style="padding:8px 0;"><a href="tel:${customerPhone}">${customerPhone}</a></td>
+        <td style="padding:8px 0;"><a href="tel:${encodeURI(customerPhone)}">${esc(customerPhone)}</a></td>
       </tr>
       <tr>
         <td style="padding:8px 0;color:#555;">Service</td>
-        <td style="padding:8px 0;">${service}</td>
+        <td style="padding:8px 0;">${esc(service)}</td>
       </tr>
       ${addonsRow}
       <tr>
