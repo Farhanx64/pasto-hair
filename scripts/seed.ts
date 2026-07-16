@@ -148,9 +148,12 @@ const AVAILABILITY_RULES = [
   },
 ];
 
+// This repo is public, so the owner's real calendar address is not hardcoded.
+// Set SEED_STAFF_CALENDAR_ID before seeding. Re-seeding without it would not
+// match the existing staff row's calendarId and would create a duplicate.
 const DEFAULT_STAFF = {
   name: "Pasto",
-  calendarId: "oppasto6@gmail.com",
+  calendarId: process.env.SEED_STAFF_CALENDAR_ID ?? "",
   role: "owner" as const,
   active: true,
 };
@@ -202,6 +205,11 @@ async function seedAvailabilityRules(payload: Awaited<ReturnType<typeof getPaylo
 }
 
 async function seedStaff(payload: Awaited<ReturnType<typeof getPayload>>) {
+  if (!DEFAULT_STAFF.calendarId) {
+    console.log("  [skip] staff — set SEED_STAFF_CALENDAR_ID to seed the owner");
+    return;
+  }
+
   const existing = await payload.find({ collection: "staff", limit: 100 });
   const existingCalendarIds = new Set(existing.docs.map((d: any) => d.calendarId));
 

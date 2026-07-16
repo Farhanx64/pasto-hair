@@ -1,12 +1,18 @@
 # Pasto Hair Rebuild — Progress Log
 
+> ⚠️ **This repository is PUBLIC.** Do not record credentials, secrets, server
+> hostnames/usernames/absolute paths, account identifiers, personal email
+> addresses, or details of unpatched vulnerabilities in this file. Use
+> placeholders (`<cpanel-user>`, `<host>`) and keep the real values and any
+> security findings in the private project notes.
+
 ## Status: 🟢 LIVE at https://pasto.hair — deployed to Namecheap cPanel (2026-06-09). Booking + Google Calendar invites working.
 
 ---
 
 ## Deployment — LIVE (2026-06-09)
 
-Deployed to Namecheap Stellar shared hosting (cPanel, **LiteSpeed** web server — not Apache — with the CloudLinux/Phusion Passenger Node loader `lsnode.js`). Host: `server377`, user `pastvucd`, app root `/home/pastvucd/repositories/pasto-hair`, data dir `/home/pastvucd/pasto-data`.
+Deployed to Namecheap Stellar shared hosting (cPanel, **LiteSpeed** web server — not Apache — with the CloudLinux/Phusion Passenger Node loader `lsnode.js`). App root `/home/<cpanel-user>/repositories/pasto-hair`, data dir `/home/<cpanel-user>/pasto-data`. (Real host and username are in the private notes.)
 
 ### Deploy model that works
 - **Build `.next` on a GitHub Actions Linux runner, server pulls the tarball** (`.github/workflows/deploy-build.yml`, commit `1be51ae`). Shared-host LVE memory limits kill `next build` on the server, and a Windows-built `.next` is **not portable** to Linux (throws "client reference manifest does not exist"). The workflow runs on `ubuntu-latest`, generates Payload types, builds, then publishes `next-build.tar.gz` (excluding `.next/cache`) as the `latest-build` release; the server curls it.
@@ -19,7 +25,7 @@ Deployed to Namecheap Stellar shared hosting (cPanel, **LiteSpeed** web server �
     --app-root repositories/pasto-hair --domain pasto.hair
   ```
   ⚠️ The `--app-root`/`--domain` must be exact — a typo returns `{"result":"success"}` but restarts nothing.
-- App stderr (crash/runtime errors) → `/home/pastvucd/repositories/pasto-hair/stderr.log`. Check it first when the site errors but the app runs manually.
+- App stderr (crash/runtime errors) → `<app-root>/stderr.log`. Check it first when the site errors but the app runs manually.
 
 ### Bugs fixed during deploy (root causes)
 1. **Turbopack symlink panic** → build script uses `next build --webpack`.
@@ -84,7 +90,7 @@ Old site reference: `/home/pasto/pasto-hair/old/` (cloned from github.com/Farhan
 - 7 services: Classic Taper $35/45m, Skin Fade $35/50m, Clean Up $20/20m, Beard Sculpt/Face Shave $10/30m, Top Trim $10/20m, Wax/Thread $10/5m, Perm $100/120m
 - 4 add-ons: Beard Sculpt $10/30m, Top Trim $10/20m, Wax/Thread $10/20m, Hot Towel $10/10m
 - 7 availability rules (all days, two shifts each — shifts split at 20:00 for evening surcharge)
-- 1 staff member: "Pasto", calendarId: `oppasto6@gmail.com`, role: owner
+- 1 staff member: "Pasto", role: owner (calendarId comes from `SEED_STAFF_CALENDAR_ID`)
 - BusinessSettings: name "Pasto Hair", timezone `America/New_York`
 - BookingSettings: 15-min slots, $10 surcharge at 20:00, fail-closed
 
@@ -187,25 +193,28 @@ d90ed71  feat: ui-ux-pro-max design system
 ### Deploy (DONE)
 - [x] Deployed to Namecheap cPanel — site live at https://pasto.hair (live `/healthz` reports Node v24.16.0)
 - [x] Node 24 selected in cPanel "Setup Node.js App"
-- [x] Private data dir created: `/home/pastvucd/pasto-data/media/`
+- [x] Private data dir created: `/home/<cpanel-user>/pasto-data/media/`
 - [x] Env vars set (`.env` + `.htaccess` SetEnv)
 - [x] Migrations run + DB seeded on server
 - [x] `/healthz` returns `{"status":"ok","db":"reachable"}`
 - [x] **First Payload admin user created** — `/api/users/init` → `{"initialized":true}`, `users: 1`. First-user creation is sealed.
 
 ### Integrations
-- [x] **Google Calendar — WORKING via OAuth2.** Service account on a personal Gmail (`farfarvip2003@gmail.com`) **cannot invite attendees** (needs Workspace Domain-Wide Delegation → 403 on `events.insert` with attendees). Switched to OAuth2 user delegation: OAuth Desktop client (ID `431451096136-...`), consent screen **published to Production** (so refresh token doesn't expire), one-time consent as the owner → refresh token in `.env` as `GOOGLE_OAUTH_CLIENT_ID/_CLIENT_SECRET/_REFRESH_TOKEN`. `getCalendarClient()` prefers OAuth, falls back to service account. Target calendar = **"CUTS"** (`27b3...@group.calendar.google.com`).
+- [x] **Google Calendar — WORKING via OAuth2.** A service account on a personal Gmail **cannot invite attendees** (that needs Workspace Domain-Wide Delegation → 403 on `events.insert` with attendees). Switched to OAuth2 user delegation: an OAuth Desktop client with the consent screen **published to Production** (so the refresh token doesn't expire), plus a one-time consent as the calendar owner → credentials live in `.env` as `GOOGLE_OAUTH_CLIENT_ID` / `_CLIENT_SECRET` / `_REFRESH_TOKEN`. `getCalendarClient()` prefers OAuth and falls back to the service account. Target calendar ID is set via `GOOGLE_CALENDAR_ID`. (Account identifiers are in the private notes.)
 - [ ] 🔴 **Resend — NOT configured. The live site sends NO emails.** `sendConfirmationEmail` / `sendOwnerNotification` (`src/lib/notifications/index.ts`) fall back to a console stub when `RESEND_API_KEY` is missing, and both are called fire-and-forget from `app/api/bookings/route.ts` — so a booking **succeeds silently**: the customer gets no confirmation and the owner gets no notification. Fix: create the API key, verify the sending domain, set `RESEND_API_KEY` + `EMAIL_FROM` in `.env` **and** the `.htaccess` `SetEnv` block, restart via cloudlinux-selector. **This is the biggest user-visible gap.**
 - [ ] Footer social links: replace placeholder `href` values with real Instagram/Facebook/X URLs (`components/layout/Footer.tsx:41,50,57`)
 
 ### Security / cleanup follow-ups
-- [ ] 🔴 **Rotate the OAuth refresh token** — it was printed in the terminal/chat during setup. Revoke at myaccount.google.com/permissions, re-run `oauth-consent.cjs`, restart. (Risk is low — transcript only, not a public repo.)
-- [ ] 🔴 Rotate the **Google service-account key** — its private key was exposed earlier (likely already auto-revoked by Google secret-scanning; OAuth is the active path — `getCalendarClient()` prefers OAuth and only falls back to the SA — so this is a dormant fallback credential).
-- [ ] Delete server helper/test scripts: `test-*.cjs`, `oauth-consent.cjs`, `update-calendar-key.cjs`, `inject-htaccess-env.cjs`, and the "TEST …" events on the CUTS calendar. (Verified: none are tracked in the repo — server-side only. App root is outside `public_html`, so they are not web-served.)
-- [ ] **Rate limiting + anti-automation on `POST /api/bookings`** — the endpoint is unauthenticated with no throttle or CAPTCHA. A script can book out every open slot (business DoS), flood the owner's inbox, and burn Resend/Google Calendar quota. Highest-severity code finding of the 2026-07-15 audit. (Was previously filed under "Future phases" as "CSRF + rate limiting".)
-- [ ] Slot double-booking TOCTOU — no atomic guard between the freebusy check and create in `app/api/bookings/route.ts`. Two concurrent requests with different `submissionId`s can both take the same slot. Fix: compound unique index on (`localDate`,`localStartTime`,`status='confirmed'`).
-- [ ] Payload hardening — set `serverURL` to the prod HTTPS origin, add it to `csrf`, set `auth.cookies.secure: true` on `Users` (Payload defaults to `secure: false`).
-- [ ] `scripts/seed.ts:153` hardcodes the owner's Gmail — scrub if the repo ever goes public.
+
+> Security findings, credential status, and infrastructure detail are tracked in
+> the **private project notes**, not here — this repo is public. The list below
+> is intentionally non-specific.
+
+- [ ] Credential rotation — see private notes.
+- [ ] Booking endpoint hardening: rate limiting + anti-automation (was previously filed under "Future phases" as "CSRF + rate limiting").
+- [ ] Booking concurrency: add a uniqueness guard so two simultaneous requests cannot take the same slot.
+- [ ] Payload hardening — set `serverURL`, add it to `csrf`, set `auth.cookies.secure: true` on `Users` (Payload defaults to `secure: false`).
+- [ ] Delete leftover server helper/test scripts and the "TEST …" calendar events. (None are tracked in this repo — server-side only.) **Keep `inject-htaccess-env.cjs`** — it copies env vars from `.env` into the `.htaccess` `SetEnv` block, which is how LiteSpeed delivers them. Keep `oauth-consent.cjs` until the credential rotation is done.
 
 ### Future phases
 - [ ] Real gallery **content** — the page is already wired (`app/(frontend)/gallery/page.tsx` reads `gallery-items` via Payload); it currently shows demo placeholders from `scripts/seed-demo-content.ts`. Upload real photos/videos in Payload admin.
@@ -215,14 +224,15 @@ d90ed71  feat: ui-ux-pro-max design system
 - [ ] Customer reminders (Phase 3 spec)
 - [ ] Audit log for admin settings changes
 
-### Fixed 2026-07-15 (audit follow-ups)
-- [x] **Lead time + booking window now enforced** — `generateSlots` previously never compared against "now", so past-dated and unbounded-future bookings were accepted. `minLeadTimeMinutes` / `maxBookingWindowDays` (defined in BookingSettings but read by nothing) are now threaded from the global into both `/api/availability` and `/api/bookings`. Enforcement is opt-in via a `now` param so the existing pure-function tests stay deterministic.
-- [x] **Email HTML escaping** — `customerName` / `notes` / `phone` reached the owner-notification template unescaped, allowing HTML (e.g. a phishing link) to be injected into the owner's inbox from the public booking form. All user-supplied values now run through `esc()`; `mailto:`/`tel:` hrefs use `encodeURI`.
-- [x] **`/healthz` trimmed** — it publicly returned the user count, Node version, and raw error messages. Now returns `{status:"ok",db:"reachable"}` or a bare `{status:"error"}` with 503; details go to the server log.
+### Fixed 2026-07-15
+- [x] **Lead time + booking window enforced.** `minLeadTimeMinutes` / `maxBookingWindowDays` were defined in BookingSettings but read by nothing; they're now threaded from the global into both `/api/availability` and `/api/bookings`, and `generateSlots` compares against the current time. Enforcement is opt-in via a `now` param so the pure-function tests stay deterministic. +7 tests.
+- [x] **Email templates escape user input.** All user-supplied values run through `esc()`; `mailto:`/`tel:` hrefs use `encodeURI`.
+- [x] **`/healthz` returns a minimal body.** `{status:"ok",db:"reachable"}` on success, bare `{status:"error"}` + 503 on failure; detail goes to the server log.
+- [x] **Owner notifications go to `OWNER_EMAIL`,** not to `EMAIL_FROM` (which must sit on the verified sending domain and is therefore a no-reply). Falls back to `EMAIL_FROM` when unset.
 
 ### Corrections to this log (2026-07-15)
 This file had drifted ~20 commits behind reality. Fixed above:
-- Claimed the first admin user was still pending (`users: 0`) — **false**, one exists and first-user creation is sealed. (Had it been true it would have been critical: an unclaimed Payload admin seat on a live site is claimable by anyone.)
+- Claimed the first admin user was still pending (`users: 0`) — **false**, one exists and first-user creation is sealed (`/api/users/init` → `initialized:true`).
 - Claimed the gallery was an unwired placeholder grid — it reads Payload; only the content is demo data.
 - Listed junk file `zi2NTVxv` for deletion — already gone.
 - Said "Current main — 7 commits" — actually 27.
