@@ -1,3 +1,5 @@
+import { randomUUID } from "crypto";
+
 import config from "@payload-config";
 import { getPayload } from "payload";
 
@@ -252,10 +254,16 @@ export async function POST(request: Request) {
     }
 
     // 13. Create Payload booking record
+    // Server-generated, not derived from submissionId: submissionId is supplied
+    // by the client, so a client could choose a predictable one. The cancel link
+    // must be unguessable.
+    const cancelToken = randomUUID();
+
     const booking = await payload.create({
       collection: "bookings",
       data: {
         submissionId,
+        cancelToken,
         status: "confirmed",
         customerName: name,
         customerEmail: email,
@@ -291,6 +299,7 @@ export async function POST(request: Request) {
       eveningSurchargeAmount: priceSummary.eveningSurcharge,
       notes,
       calendarEventId,
+      cancelToken,
       business: {
         name: businessSettings.businessName ?? undefined,
         address: businessSettings.address ?? undefined,

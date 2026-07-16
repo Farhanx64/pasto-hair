@@ -276,6 +276,46 @@ export async function createCalendarEvent(
 }
 
 /**
+ * Delete a calendar event.
+ *
+ * This is what actually frees the slot: availability is derived from the
+ * calendar's freebusy, never from the bookings table, so a booking marked
+ * cancelled while its event survives leaves the slot blocked forever.
+ *
+ * Returns true if the event is gone (including when it was already gone —
+ * Google answers 404/410 for an event deleted twice, which is success for our
+ * purposes). Returns false only when the calendar is unconfigured.
+ * Throws on real API failures so the caller can refuse to mark it cancelled.
+ */
+export async function deleteCalendarEvent(
+  calendarId: string,
+  eventId: string,
+): Promise<boolean> {
+  if (!isConfigured()) {
+    return false;
+  }
+
+  const calendar = getCalendarClient();
+
+  try {
+    await calendar.events.delete({
+      calendarId,
+      eventId,
+      sendUpdates: "all",
+    });
+    return true;
+  } catch (err: unknown) {
+    const status = (err as { code?: number; status?: number })?.code
+      ?? (err as { response?: { status?: number } })?.response?.status;
+    // Already deleted — idempotent, treat as success.
+    if (status === 404 || status === 410) {
+      return true;
+    }
+    throw err;
+  }
+}
+
+/**
  * Search for an existing calendar event that has the given submissionId
  * in its extendedProperties.private.submissionId tag.
  * Searches a ±24h window around the given date.

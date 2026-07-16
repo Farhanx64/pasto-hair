@@ -14,6 +14,17 @@ export const Bookings: CollectionConfig = {
       required: true,
     },
     {
+      name: "cancelToken",
+      type: "text",
+      unique: true,
+      index: true,
+      admin: {
+        readOnly: true,
+        description:
+          "Random server-generated token behind the customer's cancel link. Unguessable on purpose — the booking id is not, and a guessable link would let anyone cancel anyone's appointment.",
+      },
+    },
+    {
       name: "status",
       type: "select",
       defaultValue: "pending",

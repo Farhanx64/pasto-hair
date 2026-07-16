@@ -53,3 +53,4 @@ next-build.zip
 # Email template previews (scripts/preview-emails.ts)
 preview-customer.html
 preview-owner.html
+preview-cancelled.html

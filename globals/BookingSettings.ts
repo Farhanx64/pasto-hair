@@ -69,5 +69,14 @@ export const BookingSettings: GlobalConfig = {
       type: "number",
       defaultValue: 90,
     },
+    {
+      name: "cancelCutoffMinutes",
+      type: "number",
+      defaultValue: 90,
+      admin: {
+        description:
+          "How close to the appointment a customer may still cancel themselves via the link in their confirmation email. Inside this window the link tells them to call instead. 0 = allow cancelling right up to the start time.",
+      },
+    },
   ],
 };

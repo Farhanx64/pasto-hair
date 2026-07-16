@@ -45,6 +45,19 @@ export interface BookingConfirmationData {
   notes?: string;
   calendarEventId?: string;
   business?: BusinessInfo;
+  /** Random token behind the customer's cancel link. Omitted → no link shown. */
+  cancelToken?: string;
+}
+
+export interface CancellationNoticeData {
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  service: string;
+  localDate: string;
+  localStartTime: string;
+  localEndTime: string;
+  totalPrice: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,6 +73,7 @@ const C = {
   muted: "#8a8f98",
   accent: "#bb86fc",
   champagne: "#e8dcc4",
+  destructive: "#f87171", // --color-destructive
 };
 
 const FONT_HEAD = "'Oswald','Arial Narrow',Helvetica,Arial,sans-serif";
@@ -268,13 +282,22 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
     hasEveningSurcharge,
     eveningSurchargeAmount,
     business,
+    cancelToken,
   } = data;
-
-  const firstName = customerName.trim().split(/\s+/)[0] || customerName;
 
   const serviceLine = addons.length > 0
     ? `${esc(service)} <span style="color:${C.muted};">+</span> ${esc(addons.join(", "))}`
     : esc(service);
+
+  // Plain text link, not a button: cancelling should feel like a quiet exit,
+  // not a call to action competing with the confirmation itself.
+  const cancelBlock = cancelToken
+    ? `          <tr>
+            <td class="px" style="padding:10px 40px 36px;">
+              <a href="${SITE}/cancel/${encodeURIComponent(cancelToken)}" style="font-family:${FONT_BODY};font-size:12px;line-height:19px;color:${C.destructive};font-weight:600;">Cancel this appointment</a>
+            </td>
+          </tr>`
+    : "";
 
   const surchargeNote = hasEveningSurcharge
     ? `                <tr>
@@ -296,7 +319,7 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
             <td align="center" class="px" style="padding:14px 40px 0;">
               <div class="hero" style="font-family:${FONT_HEAD};font-size:38px;line-height:44px;color:${C.champagne};font-weight:600;letter-spacing:0.02em;mso-line-height-rule:exactly;">${esc(formatDateShort(localDate))}</div>
               <div style="padding-top:8px;font-family:${FONT_BODY};font-size:19px;line-height:26px;color:${C.fg};font-weight:600;letter-spacing:0.02em;">${esc(formatTimeRange(localStartTime, localEndTime))}</div>
-              <div style="padding-top:6px;font-family:${FONT_BODY};font-size:13px;line-height:20px;color:${C.muted};">${esc(durationLabel(localStartTime, localEndTime))} &nbsp;·&nbsp; See you then, ${esc(firstName)}.</div>
+              <div style="padding-top:6px;font-family:${FONT_BODY};font-size:13px;line-height:20px;color:${C.muted};">${esc(durationLabel(localStartTime, localEndTime))}</div>
             </td>
           </tr>
 
@@ -325,12 +348,24 @@ ${rule()}
           </tr>
 
           <tr>
-            <td class="px" style="padding:22px 40px 36px;">
-              <div style="font-family:${FONT_BODY};font-size:13px;line-height:21px;color:${C.muted};">
-                Need to reschedule or cancel? Just reach out &mdash; we&rsquo;ll sort it.
+            <td class="px" style="padding:22px 40px 0;">
+              <div style="font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.fg};">
+                See you then,
+              </div>
+              <div style="padding-top:4px;font-family:${FONT_HEAD};font-size:17px;line-height:24px;color:${C.champagne};font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">
+                Pasto
               </div>
             </td>
-          </tr>`;
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:24px 40px ${cancelToken ? "0" : "36px"};">
+              <div style="font-family:${FONT_BODY};font-size:12px;line-height:19px;color:${C.muted};">
+                Need to reschedule? Just reach out &mdash; we&rsquo;ll sort it.
+              </div>
+            </td>
+          </tr>
+${cancelBlock}`;
 
   return layout({
     title: "Appointment Confirmed — Pasto Hair",
@@ -378,7 +413,20 @@ export function buildCustomerText(data: BookingConfirmationData): string {
 
   lines.push(
     "",
-    "Need to reschedule or cancel? Just reach out — we'll sort it.",
+    "See you then,",
+    "Pasto",
+    "",
+    "Need to reschedule? Just reach out — we'll sort it.",
+  );
+
+  if (data.cancelToken) {
+    lines.push(
+      "",
+      `Cancel this appointment: ${SITE}/cancel/${encodeURIComponent(data.cancelToken)}`,
+    );
+  }
+
+  lines.push(
     "",
     "Pasto Hair · New York",
     "Automated message — please don't reply to this address.",
@@ -510,6 +558,79 @@ export function buildOwnerText(data: BookingConfirmationData): string {
 }
 
 // ---------------------------------------------------------------------------
+// Cancellation notice (owner)
+// ---------------------------------------------------------------------------
+
+export function buildCancellationHtml(data: CancellationNoticeData): string {
+  const { customerName, customerEmail, customerPhone, service, localDate, localStartTime, localEndTime } = data;
+
+  const body = `          <tr>
+            <td class="px" style="padding:34px 40px 0;">
+              <div style="font-family:${FONT_HEAD};font-size:12px;line-height:16px;color:${C.destructive};letter-spacing:0.18em;text-transform:uppercase;font-weight:600;">Booking Cancelled</div>
+              <div class="hero" style="padding-top:10px;font-family:${FONT_HEAD};font-size:32px;line-height:38px;color:${C.fg};font-weight:600;letter-spacing:0.02em;mso-line-height-rule:exactly;text-decoration:line-through;text-decoration-color:${C.destructive};">${esc(formatDateShort(localDate))}</div>
+              <div style="padding-top:8px;font-family:${FONT_BODY};font-size:16px;line-height:24px;color:${C.muted};font-weight:500;">${esc(formatTimeRange(localStartTime, localEndTime))} &mdash; this slot is open again.</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:26px 40px 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.elevated}" style="background-color:${C.elevated};border:1px solid ${C.border};border-radius:10px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+${detailRow("Customer", esc(customerName))}
+${detailRow("Service", esc(service))}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:22px 40px 0;">
+              <div style="font-family:${FONT_BODY};font-size:15px;line-height:24px;">
+                <a href="tel:${encodeURI(customerPhone)}" style="color:${C.fg};font-weight:600;">${esc(customerPhone)}</a>
+                <span style="color:${C.border};">&nbsp;|&nbsp;</span>
+                <a href="mailto:${encodeURI(customerEmail)}" style="color:${C.accent};font-weight:600;">${esc(customerEmail)}</a>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:22px 40px 36px;">
+              <div style="font-family:${FONT_BODY};font-size:12px;line-height:19px;color:${C.muted};">
+                Cancelled by the customer via the link in their confirmation. The calendar event has been removed.
+              </div>
+            </td>
+          </tr>`;
+
+  return layout({
+    title: "Booking Cancelled — Pasto Hair",
+    preheader: `${customerName} cancelled — ${formatDateShort(localDate)} at ${formatTime(localStartTime)} is open again.`,
+    body,
+  });
+}
+
+function buildCancellationText(data: CancellationNoticeData): string {
+  const { customerName, customerEmail, customerPhone, service, localDate, localStartTime, localEndTime } = data;
+  return [
+    "BOOKING CANCELLED — PASTO HAIR",
+    "",
+    `${formatDate(localDate)} · ${formatTimeRange(localStartTime, localEndTime)}`,
+    "This slot is open again.",
+    "",
+    `Customer: ${customerName}`,
+    `Service:  ${service}`,
+    `Phone:    ${customerPhone}`,
+    `Email:    ${customerEmail}`,
+    "",
+    "Cancelled by the customer via the link in their confirmation.",
+    "The calendar event has been removed.",
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -574,5 +695,33 @@ export async function sendOwnerNotification(
     subject: `New booking: ${booking.customerName} — ${formatDateShort(booking.localDate)} ${formatTime(booking.localStartTime)}`,
     html: buildOwnerHtml(booking),
     text: buildOwnerText(booking),
+  });
+}
+
+/** Tells the owner a slot just freed up. Owner-only — the customer already knows. */
+export async function sendCancellationNotice(
+  data: CancellationNoticeData,
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  const ownerEmail = process.env.OWNER_EMAIL ?? from;
+
+  if (!apiKey || !from || !ownerEmail) {
+    console.log(
+      "[notifications] RESEND_API_KEY or EMAIL_FROM not configured. Would have sent cancellation notice for:",
+      `${data.customerName} — ${data.service} on ${data.localDate}`,
+    );
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to: ownerEmail,
+    replyTo: data.customerEmail,
+    subject: `Cancelled: ${data.customerName} — ${formatDateShort(data.localDate)} ${formatTime(data.localStartTime)}`,
+    html: buildCancellationHtml(data),
+    text: buildCancellationText(data),
   });
 }
