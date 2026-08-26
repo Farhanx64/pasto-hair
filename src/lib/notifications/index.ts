@@ -47,6 +47,9 @@ export interface BookingConfirmationData {
   business?: BusinessInfo;
   /** Random token behind the customer's cancel link. Omitted → no link shown. */
   cancelToken?: string;
+  /** Service + addon ids (not names) for the "Book again" deep link. Omitted → no link shown. */
+  serviceId?: string;
+  addonIds?: string[];
 }
 
 export interface CancellationNoticeData {
@@ -128,6 +131,27 @@ function formatTime(time: string): string {
   const period = h >= 12 ? "PM" : "AM";
   const hour = h % 12 === 0 ? 12 : h % 12;
   return `${hour}:${m.toString().padStart(2, "0")} ${period}`;
+}
+
+/**
+ * Deep link back into the booking form with service/addons/contact info
+ * prefilled, so a repeat customer only has to pick a new date and time.
+ * Same trust boundary as the rest of this email: it's the customer's own
+ * PII sent back to their own inbox, and it only prefills a form — nothing
+ * is written until they submit, matching the site's own POST-only-mutates rule.
+ */
+function buildRebookUrl(data: BookingConfirmationData): string | undefined {
+  if (!data.serviceId) return undefined;
+  const params = new URLSearchParams({
+    service: data.serviceId,
+    name: data.customerName,
+    email: data.customerEmail,
+    phone: data.customerPhone,
+  });
+  if (data.addonIds && data.addonIds.length > 0) {
+    params.set("addons", data.addonIds.join(","));
+  }
+  return `${SITE}/booking?${params.toString()}`;
 }
 
 function formatTimeRange(startTime: string, endTime: string): string {
@@ -299,6 +323,15 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
           </tr>`
     : "";
 
+  const rebookUrl = buildRebookUrl(data);
+  const rebookBlock = rebookUrl
+    ? `          <tr>
+            <td class="px" style="padding:10px 40px 0;">
+              <a href="${rebookUrl}" style="font-family:${FONT_BODY};font-size:12px;line-height:19px;color:${C.accent};font-weight:600;">Book this again next time &rsaquo;</a>
+            </td>
+          </tr>`
+    : "";
+
   const surchargeNote = hasEveningSurcharge
     ? `                <tr>
                   <td colspan="2" style="padding:4px 0 0;font-family:${FONT_BODY};font-size:12px;line-height:18px;color:${C.muted};">
@@ -365,6 +398,7 @@ ${rule()}
               </div>
             </td>
           </tr>
+${rebookBlock}
 ${cancelBlock}`;
 
   return layout({
@@ -418,6 +452,11 @@ export function buildCustomerText(data: BookingConfirmationData): string {
     "",
     "Need to reschedule? Just reach out — we'll sort it.",
   );
+
+  const rebookUrl = buildRebookUrl(data);
+  if (rebookUrl) {
+    lines.push("", `Book this again next time: ${rebookUrl}`);
+  }
 
   if (data.cancelToken) {
     lines.push(

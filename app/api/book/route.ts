@@ -9,6 +9,7 @@ import { timeToMinutes, minutesToTime } from "@/src/lib/booking/slots";
 import { calculatePrice } from "@/src/lib/booking/pricing";
 import { getBusyBlocks, createCalendarEventFromLegacy, findEventBySubmissionId } from "@/src/lib/calendar/index";
 import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifications/index";
+import { checkRateLimit, getClientIp } from "@/src/lib/booking/rate-limit";
 
 // Public booking submission endpoint.
 //
@@ -27,7 +28,27 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Booking is unauthenticated and financially/operationally consequential (see
+// pasto-hair Security Audit finding #1: a script can otherwise walk every
+// enabled weekday and book out every slot). Keyed on IP first — cheapest
+// check, blocks a naive script before it can even reach validation — and
+// again on email once we have one, since a script rotating IPs but reusing
+// a fake sender still gets capped.
+const IP_LIMIT_MAX = 8;
+const IP_LIMIT_WINDOW_MS = 10 * 60_000; // 10 min
+const EMAIL_LIMIT_MAX = 5;
+const EMAIL_LIMIT_WINDOW_MS = 60 * 60_000; // 1 hr
+
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const ipLimit = checkRateLimit(`ip:${ip}`, IP_LIMIT_MAX, IP_LIMIT_WINDOW_MS);
+  if (!ipLimit.allowed) {
+    return Response.json(
+      { success: false, message: "Too many booking attempts. Please try again in a few minutes." },
+      { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+    );
+  }
+
   let body: BookingRequest;
 
   // 1. Parse request body
@@ -63,6 +84,14 @@ export async function POST(request: Request) {
   }
   if (!submissionId || typeof submissionId !== "string" || !submissionId.trim()) {
     return Response.json({ success: false, message: "submissionId is required" }, { status: 400 });
+  }
+
+  const emailLimit = checkRateLimit(`email:${email.toLowerCase()}`, EMAIL_LIMIT_MAX, EMAIL_LIMIT_WINDOW_MS);
+  if (!emailLimit.allowed) {
+    return Response.json(
+      { success: false, message: "Too many booking attempts for this email. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(emailLimit.retryAfterSeconds) } },
+    );
   }
 
   const normalizedAddonIds: string[] = Array.isArray(addonIds) ? addonIds.filter((id): id is string => typeof id === "string") : [];
@@ -289,7 +318,9 @@ export async function POST(request: Request) {
       customerEmail: email,
       customerPhone: phone,
       service: service.name,
+      serviceId: service.id,
       addons: addons.map((a) => a.name),
+      addonIds: normalizedAddonIds,
       localDate,
       localStartTime,
       localEndTime,

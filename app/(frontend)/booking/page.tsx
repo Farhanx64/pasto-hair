@@ -83,6 +83,19 @@ export default function BookingPage() {
 function BookingPageInner() {
   const searchParams = useSearchParams();
   const preselectedServiceId = searchParams.get("service");
+  // Rebook deep link (from the "Book this again" link in a past confirmation
+  // email): service + addon ids and the customer's own contact info, so a
+  // repeat customer only has to pick a new date and time. Read once on mount
+  // — searchParams itself never changes after that on this page.
+  const [rebookAddonIds] = React.useState<string[]>(() => {
+    const raw = searchParams.get("addons");
+    return raw ? raw.split(",").filter(Boolean) : [];
+  });
+  const [rebookName] = React.useState(searchParams.get("name") ?? "");
+  const [rebookEmail] = React.useState(searchParams.get("email") ?? "");
+  const [rebookPhone] = React.useState(searchParams.get("phone") ?? "");
+  const isRebook =
+    !!preselectedServiceId && !!rebookName && !!rebookEmail && !!rebookPhone;
 
   // Data
   const [services, setServices] = React.useState<ServiceData[]>([]);
@@ -99,8 +112,9 @@ function BookingPageInner() {
   // Mobile receipt bar
   const [receiptExpanded, setReceiptExpanded] = React.useState(false);
 
-  // Step state
-  const [step, setStep] = React.useState<Step>(0);
+  // Step state — a full rebook link (service + contact info all present)
+  // skips straight to Date & Time; everything before it is already filled in.
+  const [step, setStep] = React.useState<Step>(isRebook ? 2 : 0);
 
   // Selections
   const [selectedServiceId, setSelectedServiceId] = React.useState<string>(
@@ -111,9 +125,9 @@ function BookingPageInner() {
   const [selectedTime, setSelectedTime] = React.useState<string>("");
 
   // Customer info
-  const [name, setName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [phone, setPhone] = React.useState("");
+  const [name, setName] = React.useState(rebookName);
+  const [email, setEmail] = React.useState(rebookEmail);
+  const [phone, setPhone] = React.useState(rebookPhone);
   const [notes, setNotes] = React.useState("");
 
   // Availability
@@ -142,8 +156,18 @@ function BookingPageInner() {
         ]);
         const sData = await sRes.json();
         const aData = await aRes.json();
+        const loadedAddons: AddonData[] = aData.docs ?? [];
         setServices(sData.docs ?? []);
-        setAddons(aData.docs ?? []);
+        setAddons(loadedAddons);
+
+        // Cross-check rebook addon ids against what's actually still active —
+        // an id from an old confirmation email may since have been retired.
+        if (rebookAddonIds.length > 0) {
+          const validIds = new Set(loadedAddons.map((a) => a.id));
+          setSelectedAddonIds(
+            new Set(rebookAddonIds.filter((id) => validIds.has(id)))
+          );
+        }
       } catch {
         // silently fail — user can still proceed if partial
       } finally {
@@ -170,7 +194,7 @@ function BookingPageInner() {
       }
     }
     loadSettings();
-  }, []);
+  }, [rebookAddonIds]);
 
   // ── Fetch availability when date/service/addons change ──
   React.useEffect(() => {
