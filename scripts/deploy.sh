@@ -43,8 +43,13 @@ die()  { printf '    \033[0;31mFAILED: %s\033[0m\n' "$1" >&2; exit 1; }
 if [[ -z "${VIRTUAL_ENV:-}" ]]; then
   ACTIVATE=$(ls -d "$HOME"/nodevenv/"${APP_DIR#"$HOME"/}"/*/bin/activate 2>/dev/null | head -1 || true)
   [[ -n "$ACTIVATE" ]] || die "node venv activate script not found — activate it manually first"
+  # cPanel's generated activate script isn't written defensively against
+  # `set -u` (it references at least CL_VIRTUAL_ENV with no default) —
+  # relax nounset just for the source, then restore this script's own.
+  set +u
   # shellcheck disable=SC1090
   source "$ACTIVATE"
+  set -u
 fi
 ok "node $(node -v)"
 
