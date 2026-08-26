@@ -10,6 +10,7 @@ import { calculatePrice } from "@/src/lib/booking/pricing";
 import { getBusyBlocks, createCalendarEventFromLegacy, findEventBySubmissionId } from "@/src/lib/calendar/index";
 import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifications/index";
 import { checkRateLimit, getClientIp } from "@/src/lib/booking/rate-limit";
+import { isValidEmail } from "@/src/lib/booking/validation";
 
 // Public booking submission endpoint.
 //
@@ -26,7 +27,6 @@ export const dynamic = "force-dynamic";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Booking is unauthenticated and financially/operationally consequential (see
 // pasto-hair Security Audit finding #1: a script can otherwise walk every
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   if (!name || typeof name !== "string" || !name.trim()) {
     return Response.json({ success: false, message: "name is required" }, { status: 400 });
   }
-  if (!email || typeof email !== "string" || !EMAIL_RE.test(email)) {
+  if (!email || typeof email !== "string" || !isValidEmail(email)) {
     return Response.json({ success: false, message: "A valid email address is required" }, { status: 400 });
   }
   if (!phone || typeof phone !== "string" || !phone.trim()) {

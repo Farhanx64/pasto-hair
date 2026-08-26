@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/Button";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
+import { isValidEmail } from "@/src/lib/booking/validation";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface ServiceData {
@@ -260,7 +261,7 @@ function BookingPageInner() {
     0: !!selectedServiceId,
     1: true,
     2: !!selectedDate && !!selectedTime,
-    3: name.trim().length > 0 && email.trim().length > 0 && phone.trim().length > 0,
+    3: name.trim().length > 0 && isValidEmail(email) && phone.trim().length > 0,
     4: true,
   };
 
@@ -300,7 +301,7 @@ function BookingPageInner() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? `Server error ${res.status}`);
+        throw new Error((err as { message?: string }).message ?? `Server error ${res.status}`);
       }
 
       setConfirmedBooking({
@@ -602,12 +603,18 @@ function BookingPageInner() {
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="john@example.com"
                         className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
+                        aria-invalid={email.length > 0 && !isValidEmail(email)}
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
                           minHeight: "48px",
                         }}
                       />
+                      {email.length > 0 && !isValidEmail(email) && (
+                        <p role="alert" className="font-[family-name:var(--font-montserrat)] text-xs text-[#f87171] mt-1.5">
+                          Enter a valid email address, like john@example.com.
+                        </p>
+                      )}
                     </FormField>
 
                     <FormField label="Phone" htmlFor="booking-phone" required>
