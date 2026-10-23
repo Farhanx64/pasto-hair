@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import config from "@payload-config";
 import { getPayload } from "payload";
 
-import type { WeeklyAvailability, BookingRequest } from "@/src/lib/booking/types";
+import type { WeeklyAvailability, BookingRequest, AppliedPromo } from "@/src/lib/booking/types";
 import { generateSlots } from "@/src/lib/booking/slots";
 import { timeToMinutes, minutesToTime } from "@/src/lib/booking/slots";
 import { calculatePrice, normalizeEveningTiers } from "@/src/lib/booking/pricing";
@@ -11,6 +11,7 @@ import { getBusyBlocks, createCalendarEventFromLegacy, findEventBySubmissionId }
 import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifications/index";
 import { checkRateLimit, getClientIp } from "@/src/lib/booking/rate-limit";
 import { hasAcceptedTerms, isValidEmail } from "@/src/lib/booking/validation";
+import { checkPromoCode, normalizePromoCode } from "@/src/lib/booking/promo";
 
 // Public booking submission endpoint.
 //
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
   }
 
   // 2. Validate required fields
-  const { name, email, phone, serviceId, addonIds, notes, localDate, localStartTime, submissionId, acceptedTerms } = body;
+  const { name, email, phone, serviceId, addonIds, notes, localDate, localStartTime, submissionId, acceptedTerms, promoCode } = body;
 
   if (!name || typeof name !== "string" || !name.trim()) {
     return Response.json({ success: false, message: "name is required" }, { status: 400 });
@@ -243,6 +244,34 @@ export async function POST(request: Request) {
     const localEndTime = minutesToTime(endMinutes);
 
     // 10. Calculate price
+    // Re-check the promo code first, if one was applied. The form checked it via
+    // /api/promo, but it may have expired or hit its limit since. Reject rather
+    // than quietly booking at a higher price than the customer was shown.
+    const normalizedPromoCode = normalizePromoCode(promoCode);
+    let promo: AppliedPromo | null = null;
+    let promoDocId: number | string | null = null;
+    if (normalizedPromoCode) {
+      const promoResult = await payload.find({
+        collection: "promo-codes",
+        where: { code: { equals: normalizedPromoCode } },
+        limit: 1,
+      });
+      const promoDoc = promoResult.docs[0];
+      const check = checkPromoCode(promoDoc, new Date());
+      if (!check.valid) {
+        return Response.json(
+          {
+            success: false,
+            promoInvalid: true,
+            message: `${check.message} Remove it to book at the regular price.`,
+          },
+          { status: 400 },
+        );
+      }
+      promo = check.promo;
+      promoDocId = promoDoc.id;
+    }
+
     const priceSummary = calculatePrice(
       { id: service.id, price: service.price, durationMinutes: service.durationMinutes },
       addons.map((a) => ({ id: a.id, price: a.price, durationMinutes: a.durationMinutes })),
@@ -253,6 +282,7 @@ export async function POST(request: Request) {
         tier3Percent: bookingSettings.discountTier3Percent ?? 15,
       },
       normalizeEveningTiers(bookingSettings.eveningSurchargeTiers),
+      promo,
     );
 
     // 11. Check for race-condition duplicate on calendar right before creating event
@@ -314,11 +344,29 @@ export async function POST(request: Request) {
         totalPrice: priceSummary.total,
         discountPercent: priceSummary.discountPercent,
         discountAmount: priceSummary.discountAmount,
+        promoCode: priceSummary.promoCode,
+        promoDiscountAmount: priceSummary.promoDiscountAmount,
         eveningSurcharge: priceSummary.hasEveningSurcharge,
         calendarEventId: calendarEventId ?? null,
         termsAcceptedAt: new Date().toISOString(),
       },
     });
+
+    // 13a. Count the promo use. Non-fatal: the booking is already made, and a missed
+    // count shouldn't turn it into an error for the customer. Re-read just
+    // before writing so a concurrent booking's count isn't overwritten.
+    if (promoDocId !== null) {
+      try {
+        const current = await payload.findByID({ collection: "promo-codes", id: promoDocId });
+        await payload.update({
+          collection: "promo-codes",
+          id: promoDocId,
+          data: { timesUsed: (current.timesUsed ?? 0) + 1 },
+        });
+      } catch (err) {
+        console.error("[bookings] Promo usage count failed (non-fatal):", err);
+      }
+    }
 
     // 14. Send confirmation email + owner notification (non-blocking — failure does not fail the booking)
     const emailData = {
@@ -337,6 +385,8 @@ export async function POST(request: Request) {
       hasEveningSurcharge: priceSummary.hasEveningSurcharge,
       eveningSurchargeAmount: priceSummary.eveningSurcharge,
       eveningSurchargeStart: priceSummary.eveningSurchargeStart ?? undefined,
+      promoCode: priceSummary.promoCode ?? undefined,
+      promoDiscountAmount: priceSummary.promoDiscountAmount,
       notes,
       calendarEventId,
       cancelToken,

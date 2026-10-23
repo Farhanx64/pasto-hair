@@ -44,6 +44,9 @@ export interface BookingConfirmationData {
   eveningSurchargeAmount: number;
   /** "HH:MM" start of the evening tier that applied. Omitted → no time shown. */
   eveningSurchargeStart?: string;
+  /** Promo code that applied. Omitted → no promo line shown. */
+  promoCode?: string;
+  promoDiscountAmount?: number;
   notes?: string;
   calendarEventId?: string;
   business?: BusinessInfo;
@@ -264,6 +267,16 @@ function detailRow(label: string, value: string, opts?: { accent?: boolean }): s
                 </tr>`;
 }
 
+/** "$10" / "$10.50" — whole dollars stay unadorned, cents always show two digits. */
+function money(n: number): string {
+  return Number.isInteger(n) ? `$${n}` : `$${n.toFixed(2)}`;
+}
+
+/** "SAVE10 (−$5)". Plain text — esc() it before putting it in HTML. */
+function promoLabel(code?: string, amount?: number): string {
+  return code ? `${code} (−${money(amount ?? 0)})` : "";
+}
+
 /** Address / phone block, rendered only when BusinessSettings supplies them. */
 function businessRows(b?: BusinessInfo): string {
   if (!b || (!b.address && !b.phone)) return "";
@@ -308,6 +321,8 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
     hasEveningSurcharge,
     eveningSurchargeAmount,
     eveningSurchargeStart,
+    promoCode,
+    promoDiscountAmount,
     business,
     cancelToken,
   } = data;
@@ -366,6 +381,7 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
                   <td style="padding:22px 24px;">
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
 ${detailRow("Service", serviceLine)}
+${promoCode ? detailRow("Promo", esc(promoLabel(promoCode, promoDiscountAmount))) : ""}
 ${detailRow("Total", `$${totalPrice}`, { accent: true })}
 ${surchargeNote}
                     </table>
@@ -423,6 +439,8 @@ export function buildCustomerText(data: BookingConfirmationData): string {
     hasEveningSurcharge,
     eveningSurchargeAmount,
     eveningSurchargeStart,
+    promoCode,
+    promoDiscountAmount,
     business,
   } = data;
 
@@ -435,6 +453,7 @@ export function buildCustomerText(data: BookingConfirmationData): string {
     `Hi ${customerName}, you're booked in.`,
     "",
     `Service: ${service}${addons.length > 0 ? ` + ${addons.join(", ")}` : ""}`,
+    ...(promoCode ? [`Promo:   ${promoLabel(promoCode, promoDiscountAmount)}`] : []),
     `Total:   $${totalPrice}`,
   ];
 
@@ -495,6 +514,8 @@ export function buildOwnerHtml(data: BookingConfirmationData): string {
     totalPrice,
     hasEveningSurcharge,
     eveningSurchargeAmount,
+    promoCode,
+    promoDiscountAmount,
     notes,
   } = data;
 
@@ -529,6 +550,7 @@ export function buildOwnerHtml(data: BookingConfirmationData): string {
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
 ${detailRow("Service", serviceLine)}
 ${detailRow("Duration", esc(durationLabel(localStartTime, localEndTime)))}
+${promoCode ? detailRow("Promo", esc(promoLabel(promoCode, promoDiscountAmount))) : ""}
 ${detailRow("Total", `$${totalPrice}${hasEveningSurcharge ? ` <span style="font-size:12px;font-weight:400;color:${C.muted};">incl. $${eveningSurchargeAmount} evening</span>` : ""}`, { accent: true })}
                     </table>
                   </td>
@@ -572,6 +594,8 @@ export function buildOwnerText(data: BookingConfirmationData): string {
     totalPrice,
     hasEveningSurcharge,
     eveningSurchargeAmount,
+    promoCode,
+    promoDiscountAmount,
     notes,
     calendarEventId,
   } = data;
@@ -583,6 +607,7 @@ export function buildOwnerText(data: BookingConfirmationData): string {
     `${formatDate(localDate)} · ${formatTimeRange(localStartTime, localEndTime)} (${durationLabel(localStartTime, localEndTime)})`,
     "",
     `Service: ${service}${addons.length > 0 ? ` + ${addons.join(", ")}` : ""}`,
+    ...(promoCode ? [`Promo:   ${promoLabel(promoCode, promoDiscountAmount)}`] : []),
     `Total:   $${totalPrice}${hasEveningSurcharge ? ` (incl. $${eveningSurchargeAmount} evening surcharge)` : ""}`,
     "",
     "CONTACT",

@@ -118,6 +118,20 @@ export const Bookings: CollectionConfig = {
       },
     },
     {
+      name: "promoCode",
+      type: "text",
+      admin: {
+        description: "Promo code applied to this booking, if any.",
+      },
+    },
+    {
+      name: "promoDiscountAmount",
+      type: "number",
+      admin: {
+        description: "Dollar amount the promo code took off the services (after the multi-service discount).",
+      },
+    },
+    {
       name: "eveningSurcharge",
       type: "checkbox",
     },

@@ -22,8 +22,10 @@ import {
   DEFAULT_EVENING_SURCHARGE_TIERS,
   eveningTierFor,
   normalizeEveningTiers,
+  promoDiscountFor,
 } from "@/src/lib/booking/pricing";
-import type { EveningSurchargeTier } from "@/src/lib/booking/types";
+import { describePromo } from "@/src/lib/booking/promo";
+import type { AppliedPromo, EveningSurchargeTier } from "@/src/lib/booking/types";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -136,6 +138,12 @@ function BookingPageInner() {
   const [phone, setPhone] = React.useState(rebookPhone);
   const [notes, setNotes] = React.useState("");
   const [agreedToTerms, setAgreedToTerms] = React.useState(false);
+
+  // Promo code — checked via /api/promo for display; /api/book re-checks it
+  const [promoInput, setPromoInput] = React.useState("");
+  const [appliedPromo, setAppliedPromo] = React.useState<AppliedPromo | null>(null);
+  const [applyingPromo, setApplyingPromo] = React.useState(false);
+  const [promoError, setPromoError] = React.useState<string | null>(null);
 
   // Availability
   const [slots, setSlots] = React.useState<string[]>([]);
@@ -255,8 +263,16 @@ function BookingPageInner() {
       : 0;
   const discountAmount = Math.round(subtotal * discountPercent) / 100;
 
+  // ── Promo code (stacks after the multi-service discount, never touches the surcharge) ──
+  const promoDiscountAmount = promoDiscountFor(
+    Math.round((subtotal - discountAmount) * 100) / 100,
+    appliedPromo
+  );
+
   const totalPrice =
-    servicePrice + addonsPrice - discountAmount + eveningAmount;
+    Math.round(
+      (servicePrice + addonsPrice - discountAmount - promoDiscountAmount + eveningAmount) * 100
+    ) / 100;
 
   // ── Step validation ──
   const canProceed: Record<Step, boolean> = {
@@ -272,6 +288,40 @@ function BookingPageInner() {
   };
   const back = () => {
     if (step > 0) setStep((s) => (s - 1) as Step);
+  };
+
+  // ── Promo code ──
+  const applyPromo = async () => {
+    const code = promoInput.trim();
+    if (!code) return;
+    setApplyingPromo(true);
+    setPromoError(null);
+    try {
+      const res = await fetch("/api/promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = (await res.json().catch(() => ({}))) as Partial<AppliedPromo> & {
+        valid?: boolean;
+        message?: string;
+      };
+      if (data.valid && data.code && data.type && typeof data.value === "number") {
+        setAppliedPromo({ code: data.code, type: data.type, value: data.value });
+        setPromoInput("");
+      } else {
+        setPromoError(data.message ?? "That promo code couldn't be applied.");
+      }
+    } catch {
+      setPromoError("Couldn't check that code right now. Please try again.");
+    } finally {
+      setApplyingPromo(false);
+    }
+  };
+
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoError(null);
   };
 
   // ── Submit ──
@@ -291,6 +341,7 @@ function BookingPageInner() {
       localStartTime: selectedTime,
       submissionId: crypto.randomUUID(),
       acceptedTerms: agreedToTerms,
+      promoCode: appliedPromo?.code,
     };
 
     try {
@@ -303,8 +354,14 @@ function BookingPageInner() {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { message?: string }).message ?? `Server error ${res.status}`);
+        const err = (await res.json().catch(() => ({}))) as { message?: string; promoInvalid?: boolean };
+        // The code stopped being valid between Apply and Confirm. Drop it so the
+        // receipt shows the regular price before they confirm again.
+        if (err.promoInvalid) {
+          setAppliedPromo(null);
+          setPromoError(err.message ?? "That promo code is no longer valid.");
+        }
+        throw new Error(err.message ?? `Server error ${res.status}`);
       }
 
       setConfirmedBooking({
@@ -679,6 +736,72 @@ function BookingPageInner() {
                     <ConfirmRow label="Email" value={email} />
                     <ConfirmRow label="Phone" value={phone} />
                     {notes && <ConfirmRow label="Notes" value={notes} />}
+                    <FormField label="Promo code (optional)" htmlFor="booking-promo">
+                      {appliedPromo ? (
+                        <div
+                          className="flex items-center justify-between gap-3 rounded-xl px-4 py-3"
+                          style={{
+                            background: "rgba(187,134,252,0.08)",
+                            border: "1px solid rgba(187,134,252,0.25)",
+                            minHeight: "48px",
+                          }}
+                        >
+                          <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed]">
+                            <Check size={14} className="inline mr-1.5 -mt-0.5" color="#bb86fc" aria-hidden="true" />
+                            {appliedPromo.code} applied
+                          </span>
+                          <button
+                            type="button"
+                            onClick={removePromo}
+                            className="font-[family-name:var(--font-montserrat)] text-xs font-semibold text-[#8a8f98] hover:text-[#ededed] transition-colors duration-150 cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input
+                            id="booking-promo"
+                            type="text"
+                            autoComplete="off"
+                            autoCapitalize="characters"
+                            spellCheck={false}
+                            value={promoInput}
+                            onChange={(e) => {
+                              setPromoInput(e.target.value);
+                              setPromoError(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                applyPromo();
+                              }
+                            }}
+                            placeholder="Enter code"
+                            aria-invalid={!!promoError}
+                            className="flex-1 min-w-0 rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base uppercase placeholder:normal-case placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
+                            style={{
+                              background: "rgba(255,255,255,0.05)",
+                              border: "1px solid rgba(255,255,255,0.1)",
+                              minHeight: "48px",
+                            }}
+                          />
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={applyPromo}
+                            disabled={applyingPromo || !promoInput.trim()}
+                          >
+                            {applyingPromo ? <Loader2 size={16} className="animate-spin" /> : "Apply"}
+                          </Button>
+                        </div>
+                      )}
+                      {promoError && (
+                        <p role="alert" className="font-[family-name:var(--font-montserrat)] text-xs text-[#f87171] mt-1.5">
+                          {promoError}
+                        </p>
+                      )}
+                    </FormField>
                     {discountAmount > 0 && (
                       <div className="flex justify-between items-start gap-4">
                         <span className="font-[family-name:var(--font-montserrat)] text-sm text-accent flex-shrink-0">
@@ -686,6 +809,16 @@ function BookingPageInner() {
                         </span>
                         <span className="font-[family-name:var(--font-montserrat)] text-sm text-accent text-right tabular-nums">
                           −{money(discountAmount)}
+                        </span>
+                      </div>
+                    )}
+                    {appliedPromo && (
+                      <div className="flex justify-between items-start gap-4">
+                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] flex-shrink-0">
+                          Promo {appliedPromo.code} ({describePromo(appliedPromo)})
+                        </span>
+                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] text-right tabular-nums">
+                          −{money(promoDiscountAmount)}
                         </span>
                       </div>
                     )}
@@ -825,6 +958,13 @@ function BookingPageInner() {
                       accent
                     />
                   )}
+                  {appliedPromo && (
+                    <SummaryRow
+                      label={`Promo ${appliedPromo.code}`}
+                      value={`−${money(promoDiscountAmount)}`}
+                      accent
+                    />
+                  )}
                   {(selectedDate || selectedTime) && (
                     <div
                       className="pt-3 mt-1 border-t"
@@ -879,7 +1019,7 @@ function BookingPageInner() {
           <div
             className="overflow-hidden transition-all duration-200"
             style={{
-              maxHeight: receiptExpanded ? "260px" : "0px",
+              maxHeight: receiptExpanded ? "300px" : "0px",
               opacity: receiptExpanded ? 1 : 0,
             }}
           >
@@ -899,6 +1039,13 @@ function BookingPageInner() {
                 <SummaryRow
                   label={`Multi-service discount (${discountPercent}%)`}
                   value={`−${money(discountAmount)}`}
+                  accent
+                />
+              )}
+              {appliedPromo && (
+                <SummaryRow
+                  label={`Promo ${appliedPromo.code}`}
+                  value={`−${money(promoDiscountAmount)}`}
                   accent
                 />
               )}

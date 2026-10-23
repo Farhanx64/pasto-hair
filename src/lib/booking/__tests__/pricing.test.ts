@@ -4,6 +4,7 @@ import {
   describeEveningTiers,
   eveningTierFor,
   normalizeEveningTiers,
+  promoDiscountFor,
 } from "../pricing";
 import type { ServiceSummary, AddonSummary } from "../types";
 
@@ -240,5 +241,93 @@ describe("evening surcharge tiers from admin", () => {
         { start: "21:00", amount: 20 },
       ])
     ).toBe("+$10 from 8:00 PM, +$20 from 9:00 PM");
+  });
+});
+
+describe("promo code", () => {
+  const discount = { enabled: true, tier2Percent: 10, tier3Percent: 15 };
+  const percent10 = { code: "SAVE10", type: "percent" as const, value: 10 };
+  const fixed5 = { code: "FIVE", type: "fixed" as const, value: 5 };
+
+  it("no promo → promo fields are empty and total unchanged", () => {
+    const result = calculatePrice(baseService, [addon1], "10:00", discount);
+
+    expect(result.promoCode).toBeNull();
+    expect(result.promoDiscountAmount).toBe(0);
+    expect(result.total).toBe(63); // 70 - 7
+  });
+
+  it("percent promo stacks on the services AFTER the multi-service discount", () => {
+    // 70 subtotal - 10% multi (7) = 63; 10% promo of 63 = 6.30
+    const result = calculatePrice(baseService, [addon1], "10:00", discount, undefined, percent10);
+
+    expect(result.discountAmount).toBe(7);
+    expect(result.promoCode).toBe("SAVE10");
+    expect(result.promoDiscountAmount).toBe(6.3);
+    expect(result.total).toBe(56.7);
+  });
+
+  it("fixed promo comes off the services", () => {
+    const result = calculatePrice(baseService, [], "10:00", discount, undefined, fixed5);
+
+    expect(result.promoDiscountAmount).toBe(5);
+    expect(result.total).toBe(45);
+  });
+
+  it("evening surcharge is never discounted by the promo", () => {
+    // 50 services, 10% promo = 5 off; $20 surcharge (21:00 tier) untouched
+    const result = calculatePrice(baseService, [], "21:00", discount, undefined, percent10);
+
+    expect(result.eveningSurcharge).toBe(20);
+    expect(result.promoDiscountAmount).toBe(5);
+    expect(result.total).toBe(65); // 50 - 5 + 20
+  });
+
+  it("fixed promo larger than the services clamps to $0, surcharge still charged", () => {
+    const big = { code: "BIG", type: "fixed" as const, value: 500 };
+    const result = calculatePrice(baseService, [], "20:00", discount, undefined, big);
+
+    expect(result.promoDiscountAmount).toBe(50);
+    expect(result.eveningSurcharge).toBe(10);
+    expect(result.total).toBe(10);
+  });
+
+  it("fixed promo clamps to the post-multi-service-discount amount", () => {
+    // 3 services: 70 - 15% (10.5) = 59.5 left; $100 promo takes exactly 59.5
+    const svc30: ServiceSummary = { id: "svc-30", price: 30, durationMinutes: 60 };
+    const big = { code: "BIG", type: "fixed" as const, value: 100 };
+    const result = calculatePrice(svc30, [addon1, { ...addon1, id: "addon-1b" }], "10:00", discount, undefined, big);
+
+    expect(result.discountAmount).toBe(10.5);
+    expect(result.promoDiscountAmount).toBe(59.5);
+    expect(result.total).toBe(0);
+  });
+
+  it("percent promo rounds to cents", () => {
+    // 33.33 * 15% = 4.9995 → 5.00
+    const svc: ServiceSummary = { id: "svc-odd", price: 33.33, durationMinutes: 30 };
+    const result = calculatePrice(svc, [], "10:00", undefined, undefined, {
+      code: "P15",
+      type: "percent",
+      value: 15,
+    });
+
+    expect(result.promoDiscountAmount).toBe(5);
+    expect(result.total).toBe(28.33);
+  });
+
+  it("100% promo zeroes the services only", () => {
+    const all = { code: "FREE", type: "percent" as const, value: 100 };
+    const result = calculatePrice(baseService, [addon1], "20:00", discount, undefined, all);
+
+    expect(result.promoDiscountAmount).toBe(63);
+    expect(result.total).toBe(10);
+  });
+
+  it("promoDiscountFor: no promo, zero amount, or bad value → 0", () => {
+    expect(promoDiscountFor(50, null)).toBe(0);
+    expect(promoDiscountFor(0, fixed5)).toBe(0);
+    expect(promoDiscountFor(50, { ...fixed5, value: -5 })).toBe(0);
+    expect(promoDiscountFor(50, { ...fixed5, value: NaN })).toBe(0);
   });
 });
