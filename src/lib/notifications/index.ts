@@ -182,7 +182,7 @@ function durationLabel(startTime: string, endTime: string): string {
  * `preheader` is the grey preview line clients show next to the subject —
  * without it they scrape the first visible text, which reads like debris.
  */
-function layout(opts: { title: string; preheader: string; body: string }): string {
+function layout(opts: { title: string; preheader: string; body: string; footerNote?: string }): string {
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
@@ -229,7 +229,7 @@ ${opts.body}
           </tr>
           <tr>
             <td align="center" style="padding:0 24px 24px;font-family:${FONT_BODY};font-size:11px;line-height:18px;color:#5a5f68;">
-              Automated message — please don&rsquo;t reply to this address.
+              ${opts.footerNote ?? "Automated message — please don&rsquo;t reply to this address."}
             </td>
           </tr>
         </table>
@@ -774,6 +774,107 @@ export function buildSignInText(url: string): string {
     "",
     "Pasto Hair · New York",
     "Automated message — please don't reply to this address.",
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Promo announcement (sent by scripts/send-promo-email.ts, not by the site)
+// ---------------------------------------------------------------------------
+
+export interface PromoAnnouncementCode {
+  code: string;
+  label: string; // "10% off" / "$5 off"
+}
+
+// Promotional, not transactional: the footer says why they got it and how to
+// opt out (replies go to the owner — see the script's replyTo).
+const PROMO_FOOTER =
+  "You&rsquo;re getting this because you&rsquo;ve booked with Pasto Hair. Don&rsquo;t want offers like this? Reply &ldquo;unsubscribe&rdquo; and we&rsquo;ll take you off the list.";
+
+export function buildPromoAnnouncementHtml(codes: PromoAnnouncementCode[], business?: BusinessInfo): string {
+  const codeRows = codes
+    .map(
+      (c) => `                <tr>
+                  <td style="padding:14px 18px;border-top:1px solid ${C.border};font-family:${FONT_HEAD};font-size:18px;line-height:24px;color:${C.champagne};font-weight:600;letter-spacing:0.06em;word-break:break-all;overflow-wrap:anywhere;">${esc(c.code)}</td>
+                  <td align="right" style="padding:14px 18px;border-top:1px solid ${C.border};font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.accent};font-weight:700;white-space:nowrap;vertical-align:middle;">${esc(c.label)}</td>
+                </tr>`,
+    )
+    .join("\n");
+
+  const body = `${headerRow()}
+
+          <tr>
+            <td align="center" class="px" style="padding:30px 40px 0;">
+              <div style="font-family:${FONT_HEAD};font-size:12px;line-height:16px;color:${C.accent};letter-spacing:0.18em;text-transform:uppercase;font-weight:600;">Limited chairs</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" class="px" style="padding:14px 40px 0;">
+              <div class="hero" style="font-family:${FONT_HEAD};font-size:34px;line-height:40px;color:${C.champagne};font-weight:600;letter-spacing:0.02em;mso-line-height-rule:exactly;">Slots are filling up</div>
+              <div style="padding-top:12px;font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.muted};">
+                The calendar is getting packed. Lock in your next cut before the good times are gone &mdash; and take one of these codes with you.
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:26px 40px 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.elevated}" style="background-color:${C.elevated};border:1px solid ${C.border};border-radius:10px;border-collapse:separate !important;">
+                <tr>
+                  <td colspan="2" style="padding:14px 18px 10px;font-family:${FONT_BODY};font-size:11px;line-height:16px;color:${C.muted};letter-spacing:0.1em;text-transform:uppercase;">Your promo codes</td>
+                </tr>
+${codeRows}
+              </table>
+              <div style="padding-top:10px;font-family:${FONT_BODY};font-size:12px;line-height:19px;color:${C.muted};">
+                Enter a code on the last step of booking. One code per booking; it comes off your services, not the evening rate.
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" class="px" style="padding:28px 40px 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" bgcolor="${C.accent}" style="background-color:${C.accent};border-radius:999px;">
+                    <a href="${SITE}/booking" style="display:inline-block;padding:14px 34px;font-family:${FONT_BODY};font-size:14px;line-height:20px;color:${C.bg};font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Book your slot</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:30px 40px 0;">
+${rule()}
+            </td>
+          </tr>
+${businessRows(business)}
+          <tr><td style="height:36px;line-height:36px;font-size:0;">&nbsp;</td></tr>`;
+
+  return layout({
+    title: "Slots are filling up — Pasto Hair",
+    preheader: `Book before the calendar fills — ${codes.map((c) => `${c.code} for ${c.label}`).join(", ")}.`,
+    body,
+    footerNote: PROMO_FOOTER,
+  });
+}
+
+export function buildPromoAnnouncementText(codes: PromoAnnouncementCode[], business?: BusinessInfo): string {
+  return [
+    "SLOTS ARE FILLING UP — PASTO HAIR",
+    "",
+    "The calendar is getting packed. Lock in your next cut before the good times are gone, and take one of these codes with you:",
+    "",
+    ...codes.map((c) => `  ${c.code} — ${c.label}`),
+    "",
+    "Enter a code on the last step of booking. One code per booking; it comes off your services, not the evening rate.",
+    "",
+    `Book: ${SITE}/booking`,
+    ...(business?.address ? ["", business.address] : []),
+    ...(business?.phone ? [business.phone] : []),
+    "",
+    "You're getting this because you've booked with Pasto Hair. Don't want offers like this? Reply \"unsubscribe\" and we'll take you off the list.",
   ].join("\n");
 }
 
