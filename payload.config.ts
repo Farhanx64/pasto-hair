@@ -19,6 +19,7 @@ import { Testimonials } from "./collections/Testimonials";
 import { BusinessSettings } from "./globals/BusinessSettings";
 import { BookingSettings } from "./globals/BookingSettings";
 import { Theme } from "./globals/Theme";
+import { Legal } from "./globals/Legal";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -37,7 +38,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Services, Addons, Staff, AvailabilityRules, BlockedDates, Bookings, GalleryItems, Testimonials],
-  globals: [BusinessSettings, BookingSettings, Theme],
+  globals: [BusinessSettings, BookingSettings, Theme, Legal],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {

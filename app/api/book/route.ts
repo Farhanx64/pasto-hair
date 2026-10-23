@@ -10,7 +10,7 @@ import { calculatePrice, normalizeEveningTiers } from "@/src/lib/booking/pricing
 import { getBusyBlocks, createCalendarEventFromLegacy, findEventBySubmissionId } from "@/src/lib/calendar/index";
 import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifications/index";
 import { checkRateLimit, getClientIp } from "@/src/lib/booking/rate-limit";
-import { isValidEmail } from "@/src/lib/booking/validation";
+import { hasAcceptedTerms, isValidEmail } from "@/src/lib/booking/validation";
 
 // Public booking submission endpoint.
 //
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   }
 
   // 2. Validate required fields
-  const { name, email, phone, serviceId, addonIds, notes, localDate, localStartTime, submissionId } = body;
+  const { name, email, phone, serviceId, addonIds, notes, localDate, localStartTime, submissionId, acceptedTerms } = body;
 
   if (!name || typeof name !== "string" || !name.trim()) {
     return Response.json({ success: false, message: "name is required" }, { status: 400 });
@@ -84,6 +84,12 @@ export async function POST(request: Request) {
   }
   if (!submissionId || typeof submissionId !== "string" || !submissionId.trim()) {
     return Response.json({ success: false, message: "submissionId is required" }, { status: 400 });
+  }
+  if (!hasAcceptedTerms(acceptedTerms)) {
+    return Response.json(
+      { success: false, message: "Please agree to the Terms of Service to book your appointment." },
+      { status: 400 },
+    );
   }
 
   const emailLimit = checkRateLimit(`email:${email.toLowerCase()}`, EMAIL_LIMIT_MAX, EMAIL_LIMIT_WINDOW_MS);
@@ -310,6 +316,7 @@ export async function POST(request: Request) {
         discountAmount: priceSummary.discountAmount,
         eveningSurcharge: priceSummary.hasEveningSurcharge,
         calendarEventId: calendarEventId ?? null,
+        termsAcceptedAt: new Date().toISOString(),
       },
     });
 

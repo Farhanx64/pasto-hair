@@ -14,6 +14,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { getPayload } from "payload";
 import config from "../payload.config";
+import { buildStarterTerms, DEFAULT_CANCEL_CUTOFF_MINUTES } from "../src/lib/legal/terms-template";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -250,6 +251,26 @@ async function seedBookingSettings(payload: Awaited<ReturnType<typeof getPayload
   console.log("  [ok]   booking settings updated");
 }
 
+// Only fills in the terms when none are saved — never overwrites the owner's
+// edits. The starter text quotes the current cancel cutoff from booking settings.
+async function seedLegal(payload: Awaited<ReturnType<typeof getPayload>>) {
+  const legal = await payload.findGlobal({ slug: "legal" });
+  if (legal.termsBody?.root?.children?.length) {
+    console.log("  [skip] terms of service already set");
+    return;
+  }
+
+  const bookingSettings = await payload.findGlobal({ slug: "booking-settings" });
+  await payload.updateGlobal({
+    slug: "legal",
+    data: {
+      termsBody: buildStarterTerms(bookingSettings.cancelCutoffMinutes ?? DEFAULT_CANCEL_CUTOFF_MINUTES),
+      termsUpdatedAt: new Date().toISOString(),
+    },
+  });
+  console.log("  [ok]   starter terms of service created");
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -275,6 +296,9 @@ async function main() {
 
   console.log("\nSeeding booking settings...");
   await seedBookingSettings(payload);
+
+  console.log("\nSeeding terms of service...");
+  await seedLegal(payload);
 
   console.log("\nSeed complete.");
   process.exit(0);
