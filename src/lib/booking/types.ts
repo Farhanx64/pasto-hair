@@ -35,10 +35,16 @@ export interface AddonSummary {
   durationMinutes: number;
 }
 
+export interface EveningSurchargeTier {
+  start: string;  // "HH:MM" — tier applies to bookings starting at or after this
+  amount: number; // dollars
+}
+
 export interface PriceSummary {
   basePrice: number;
   addonsPrice: number;
   eveningSurcharge: number;
+  eveningSurchargeStart: string | null; // start of the tier that applied
   total: number;
   hasEveningSurcharge: boolean;
   serviceCount: number;    // 1 + number of add-ons

@@ -1,4 +1,5 @@
 import type { GlobalConfig } from "payload";
+import { DEFAULT_EVENING_SURCHARGE_TIERS } from "../src/lib/booking/pricing";
 
 export const BookingSettings: GlobalConfig = {
   slug: "booking-settings",
@@ -13,17 +14,36 @@ export const BookingSettings: GlobalConfig = {
       defaultValue: 15,
     },
     {
-      name: "eveningSurchargeStart",
-      type: "text",
-      defaultValue: "20:00",
+      name: "eveningSurchargeTiers",
+      label: "Evening surcharge tiers",
+      type: "array",
+      defaultValue: DEFAULT_EVENING_SURCHARGE_TIERS.map((t) => ({ ...t })),
       admin: {
-        description: "Time in HH:MM format when evening surcharge begins",
+        description:
+          "Each tier applies to bookings starting at or after its start time. A booking pays only the latest tier it falls into (tiers don't add up). Remove every row to turn the evening surcharge off.",
       },
-    },
-    {
-      name: "eveningSurchargeAmount",
-      type: "number",
-      defaultValue: 10,
+      fields: [
+        {
+          name: "start",
+          type: "text",
+          required: true,
+          admin: {
+            description: "24-hour HH:MM, e.g. 20:00 for 8 PM",
+          },
+          validate: (value: string | null | undefined) =>
+            /^([01]\d|2[0-3]):[0-5]\d$/.test(value ?? "") ||
+            "Use 24-hour HH:MM, e.g. 20:00 for 8 PM",
+        },
+        {
+          name: "amount",
+          type: "number",
+          required: true,
+          min: 0,
+          admin: {
+            description: "Dollars added to the booking total",
+          },
+        },
+      ],
     },
     {
       name: "multiServiceDiscountEnabled",

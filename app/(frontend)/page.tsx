@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getPayload } from "payload";
 import config from "@payload-config";
+import { describeEveningTiers, normalizeEveningTiers } from "@/src/lib/booking/pricing";
 import type {
   Service,
   BookingSetting,
@@ -88,12 +89,9 @@ export default async function HomePage() {
   const { services, testimonials, galleryItems, bookingSettings } =
     await getHomeData();
 
-  const surchargeStart = bookingSettings?.eveningSurchargeStart ?? "20:00";
-  const surchargeAmount = bookingSettings?.eveningSurchargeAmount ?? 10;
-  const [surchargeH] = surchargeStart.split(":").map(Number);
-  const surchargeHour12 =
-    surchargeH === 12 ? 12 : surchargeH > 12 ? surchargeH - 12 : surchargeH;
-  const surchargeAmPm = surchargeH >= 12 ? "PM" : "AM";
+  const eveningRates = describeEveningTiers(
+    normalizeEveningTiers(bookingSettings?.eveningSurchargeTiers),
+  );
 
   const [featuredProp, ...secondaryProps] = valueProps;
 
@@ -264,8 +262,7 @@ export default async function HomePage() {
                 Services
               </h2>
               <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] mt-1">
-                Bookings at or after {surchargeHour12}:00 {surchargeAmPm} include a $
-                {surchargeAmount} evening rate.
+                {eveningRates ? `Evening rates: ${eveningRates}.` : null}
               </p>
             </div>
             <Link

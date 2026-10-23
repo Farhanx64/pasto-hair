@@ -18,6 +18,12 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import {
+  DEFAULT_EVENING_SURCHARGE_TIERS,
+  eveningTierFor,
+  normalizeEveningTiers,
+} from "@/src/lib/booking/pricing";
+import type { EveningSurchargeTier } from "@/src/lib/booking/types";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -63,8 +69,6 @@ type Step = 0 | 1 | 2 | 3 | 4;
 // Fallback defaults for the receipt display. The live values are read from the
 // booking-settings global at runtime (see loadSettings); these are only used as
 // initial state and if that fetch fails. The server re-prices authoritatively on submit.
-const EVENING_SURCHARGE_HOUR = 20; // 8 PM
-const EVENING_SURCHARGE = 10;
 const DISCOUNT_ENABLED = true;
 const DISCOUNT_TIER2_PERCENT = 10; // exactly 2 services
 const DISCOUNT_TIER3_PERCENT = 15; // 3+ services
@@ -104,8 +108,9 @@ function BookingPageInner() {
   const [loadingData, setLoadingData] = React.useState(true);
 
   // Booking settings (from the booking-settings global; fallbacks match server defaults)
-  const [eveningHour, setEveningHour] = React.useState(EVENING_SURCHARGE_HOUR);
-  const [eveningAmount, setEveningAmount] = React.useState(EVENING_SURCHARGE);
+  const [eveningTiers, setEveningTiers] = React.useState<EveningSurchargeTier[]>(
+    DEFAULT_EVENING_SURCHARGE_TIERS,
+  );
   const [discountEnabled, setDiscountEnabled] = React.useState(DISCOUNT_ENABLED);
   const [tier2, setTier2] = React.useState(DISCOUNT_TIER2_PERCENT);
   const [tier3, setTier3] = React.useState(DISCOUNT_TIER3_PERCENT);
@@ -182,10 +187,7 @@ function BookingPageInner() {
       try {
         const res = await fetch("/api/globals/booking-settings");
         const data = await res.json();
-        const parsedHour = parseInt(String(data.eveningSurchargeStart ?? "").split(":")[0], 10);
-        if (Number.isFinite(parsedHour)) setEveningHour(parsedHour);
-        if (typeof data.eveningSurchargeAmount === "number")
-          setEveningAmount(data.eveningSurchargeAmount);
+        setEveningTiers(normalizeEveningTiers(data.eveningSurchargeTiers));
         if (typeof data.multiServiceDiscountEnabled === "boolean")
           setDiscountEnabled(data.multiServiceDiscountEnabled);
         if (typeof data.discountTier2Percent === "number") setTier2(data.discountTier2Percent);
@@ -234,11 +236,10 @@ function BookingPageInner() {
   const servicePrice = selectedService?.price ?? 0;
   const addonsPrice = selectedAddons.reduce((sum, a) => sum + a.price, 0);
 
-  const isSurcharge = React.useMemo(() => {
-    if (!selectedTime) return false;
-    const [h] = selectedTime.split(":").map(Number);
-    return h >= eveningHour;
-  }, [selectedTime, eveningHour]);
+  const eveningAmount = selectedTime
+    ? (eveningTierFor(eveningTiers, selectedTime)?.amount ?? 0)
+    : 0;
+  const isSurcharge = eveningAmount > 0;
 
   // ── Multi-service discount (display-only; server re-prices on submit) ──
   const subtotal = servicePrice + addonsPrice;
@@ -254,7 +255,7 @@ function BookingPageInner() {
   const discountAmount = Math.round(subtotal * discountPercent) / 100;
 
   const totalPrice =
-    servicePrice + addonsPrice - discountAmount + (isSurcharge ? eveningAmount : 0);
+    servicePrice + addonsPrice - discountAmount + eveningAmount;
 
   // ── Step validation ──
   const canProceed: Record<Step, boolean> = {
@@ -545,14 +546,15 @@ function BookingPageInner() {
                           ) : (
                             <>
                               <option value="">Select a time</option>
-                              {slots.map((slot) => (
-                                <option key={slot} value={slot}>
-                                  {formatTime12(slot)}
-                                  {parseInt(slot.split(":")[0]) >= eveningHour
-                                    ? ` (+$${eveningAmount} evening rate)`
-                                    : ""}
-                                </option>
-                              ))}
+                              {slots.map((slot) => {
+                                const tier = eveningTierFor(eveningTiers, slot);
+                                return (
+                                  <option key={slot} value={slot}>
+                                    {formatTime12(slot)}
+                                    {tier ? ` (+$${tier.amount} evening rate)` : ""}
+                                  </option>
+                                );
+                              })}
                             </>
                           )}
                         </select>

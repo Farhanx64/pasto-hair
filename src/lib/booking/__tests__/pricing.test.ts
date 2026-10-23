@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { calculatePrice } from "../pricing";
+import {
+  calculatePrice,
+  describeEveningTiers,
+  eveningTierFor,
+  normalizeEveningTiers,
+} from "../pricing";
 import type { ServiceSummary, AddonSummary } from "../types";
 
 const baseService: ServiceSummary = {
@@ -63,12 +68,20 @@ describe("calculatePrice", () => {
     expect(result.total).toBe(50);
   });
 
-  it("start time 21:00 → surcharge applies", () => {
+  it("start time 21:00 → second tier applies ($20, not stacked)", () => {
     const result = calculatePrice(baseService, [], "21:00");
 
-    expect(result.eveningSurcharge).toBe(10);
+    expect(result.eveningSurcharge).toBe(20);
+    expect(result.eveningSurchargeStart).toBe("21:00");
     expect(result.hasEveningSurcharge).toBe(true);
-    expect(result.total).toBe(60);
+    expect(result.total).toBe(70);
+  });
+
+  it("start time 20:59 → still first tier", () => {
+    const result = calculatePrice(baseService, [], "20:59");
+
+    expect(result.eveningSurcharge).toBe(10);
+    expect(result.eveningSurchargeStart).toBe("20:00");
   });
 
   it("zero-price addon does not change total", () => {
@@ -174,5 +187,58 @@ describe("multi-service discount", () => {
     expect(
       calculatePrice(svc30, [addon20, addon20b], "10:00", discount).serviceCount
     ).toBe(3);
+  });
+});
+
+describe("evening surcharge tiers from admin", () => {
+  it("uses the tiers passed in rather than the defaults", () => {
+    const tiers = [
+      { start: "19:00", amount: 5 },
+      { start: "22:00", amount: 30 },
+    ];
+    expect(calculatePrice(baseService, [], "18:59", undefined, tiers).eveningSurcharge).toBe(0);
+    expect(calculatePrice(baseService, [], "19:30", undefined, tiers).eveningSurcharge).toBe(5);
+    expect(calculatePrice(baseService, [], "22:15", undefined, tiers).eveningSurcharge).toBe(30);
+  });
+
+  it("empty tiers → no surcharge at any time", () => {
+    const result = calculatePrice(baseService, [], "23:00", undefined, []);
+
+    expect(result.hasEveningSurcharge).toBe(false);
+    expect(result.eveningSurchargeStart).toBeNull();
+    expect(result.total).toBe(50);
+  });
+
+  it("tiers entered out of order are sorted", () => {
+    const tiers = [
+      { start: "21:00", amount: 20 },
+      { start: "20:00", amount: 10 },
+    ];
+    expect(eveningTierFor(tiers, "20:30")?.amount).toBe(10);
+    expect(eveningTierFor(tiers, "21:30")?.amount).toBe(20);
+  });
+
+  it("normalize: missing field → defaults; malformed rows dropped", () => {
+    expect(normalizeEveningTiers(undefined)).toEqual([
+      { start: "20:00", amount: 10 },
+      { start: "21:00", amount: 20 },
+    ]);
+    expect(
+      normalizeEveningTiers([
+        { start: "8pm", amount: 10 },
+        { start: "21:00", amount: null },
+        { start: "22:00", amount: 0 },
+        { start: "23:00", amount: 25 },
+      ])
+    ).toEqual([{ start: "23:00", amount: 25 }]);
+  });
+
+  it("describe formats tiers for display", () => {
+    expect(
+      describeEveningTiers([
+        { start: "20:00", amount: 10 },
+        { start: "21:00", amount: 20 },
+      ])
+    ).toBe("+$10 from 8:00 PM, +$20 from 9:00 PM");
   });
 });

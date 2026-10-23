@@ -40,6 +40,7 @@ const sample: BookingConfirmationData = {
   totalPrice: 68,
   hasEveningSurcharge: true,
   eveningSurchargeAmount: 10,
+  eveningSurchargeStart: "20:00",
   notes: "Going a bit shorter on the sides than last time <b>please</b>",
   calendarEventId: "abc123eventid",
   cancelToken: "8f3c1d2e-4b5a-6c7d-8e9f-0a1b2c3d4e5f",

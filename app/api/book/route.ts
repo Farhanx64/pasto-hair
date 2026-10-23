@@ -6,7 +6,7 @@ import { getPayload } from "payload";
 import type { WeeklyAvailability, BookingRequest } from "@/src/lib/booking/types";
 import { generateSlots } from "@/src/lib/booking/slots";
 import { timeToMinutes, minutesToTime } from "@/src/lib/booking/slots";
-import { calculatePrice } from "@/src/lib/booking/pricing";
+import { calculatePrice, normalizeEveningTiers } from "@/src/lib/booking/pricing";
 import { getBusyBlocks, createCalendarEventFromLegacy, findEventBySubmissionId } from "@/src/lib/calendar/index";
 import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifications/index";
 import { checkRateLimit, getClientIp } from "@/src/lib/booking/rate-limit";
@@ -246,6 +246,7 @@ export async function POST(request: Request) {
         tier2Percent: bookingSettings.discountTier2Percent ?? 10,
         tier3Percent: bookingSettings.discountTier3Percent ?? 15,
       },
+      normalizeEveningTiers(bookingSettings.eveningSurchargeTiers),
     );
 
     // 11. Check for race-condition duplicate on calendar right before creating event
@@ -328,6 +329,7 @@ export async function POST(request: Request) {
       totalPrice: priceSummary.total,
       hasEveningSurcharge: priceSummary.hasEveningSurcharge,
       eveningSurchargeAmount: priceSummary.eveningSurcharge,
+      eveningSurchargeStart: priceSummary.eveningSurchargeStart ?? undefined,
       notes,
       calendarEventId,
       cancelToken,

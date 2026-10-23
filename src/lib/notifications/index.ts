@@ -42,6 +42,8 @@ export interface BookingConfirmationData {
   totalPrice: number;
   hasEveningSurcharge: boolean;
   eveningSurchargeAmount: number;
+  /** "HH:MM" start of the evening tier that applied. Omitted → no time shown. */
+  eveningSurchargeStart?: string;
   notes?: string;
   calendarEventId?: string;
   business?: BusinessInfo;
@@ -305,6 +307,7 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
     totalPrice,
     hasEveningSurcharge,
     eveningSurchargeAmount,
+    eveningSurchargeStart,
     business,
     cancelToken,
   } = data;
@@ -335,7 +338,7 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
   const surchargeNote = hasEveningSurcharge
     ? `                <tr>
                   <td colspan="2" style="padding:4px 0 0;font-family:${FONT_BODY};font-size:12px;line-height:18px;color:${C.muted};">
-                    Includes a $${eveningSurchargeAmount} evening surcharge (8:00 PM or later).
+                    Includes a $${eveningSurchargeAmount} evening surcharge${eveningSurchargeStart ? ` (${formatTime(eveningSurchargeStart)} or later)` : ""}.
                   </td>
                 </tr>`
     : "";
@@ -419,6 +422,7 @@ export function buildCustomerText(data: BookingConfirmationData): string {
     totalPrice,
     hasEveningSurcharge,
     eveningSurchargeAmount,
+    eveningSurchargeStart,
     business,
   } = data;
 
@@ -435,7 +439,7 @@ export function buildCustomerText(data: BookingConfirmationData): string {
   ];
 
   if (hasEveningSurcharge) {
-    lines.push(`         (includes $${eveningSurchargeAmount} evening surcharge, 8:00 PM or later)`);
+    lines.push(`         (includes $${eveningSurchargeAmount} evening surcharge${eveningSurchargeStart ? `, ${formatTime(eveningSurchargeStart)} or later` : ""})`);
   }
 
   if (business?.address) {

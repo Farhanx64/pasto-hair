@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getPayload } from "payload";
 import config from "@payload-config";
+import { describeEveningTiers, normalizeEveningTiers } from "@/src/lib/booking/pricing";
 import type { Service, Addon, BookingSetting } from "@/payload-types";
 
 export const dynamic = "force-dynamic";
@@ -53,11 +54,9 @@ async function getPricingData() {
 export default async function PricingPage() {
   const { services, addons, bookingSettings } = await getPricingData();
 
-  const surchargeStart = bookingSettings?.eveningSurchargeStart ?? "20:00";
-  const surchargeAmount = bookingSettings?.eveningSurchargeAmount ?? 10;
-  const [surchargeH] = surchargeStart.split(":").map(Number);
-  const surchargeHour12 = surchargeH === 12 ? 12 : surchargeH > 12 ? surchargeH - 12 : surchargeH;
-  const surchargeAmPm = surchargeH >= 12 ? "PM" : "AM";
+  const eveningRates = describeEveningTiers(
+    normalizeEveningTiers(bookingSettings?.eveningSurchargeTiers),
+  );
 
   const s =
     (bookingSettings as
@@ -123,14 +122,15 @@ export default async function PricingPage() {
             {/* RIGHT — sticky aside */}
             <aside className="mt-12 lg:mt-0 lg:sticky lg:top-24 self-start flex flex-col gap-4">
               {/* Evening-rate note */}
-              <GlassCard className="px-5 py-4 flex items-start gap-3" hover={false}>
-                <Clock size={18} className="mt-0.5 flex-shrink-0" color="#bb86fc" />
-                <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed]/80 leading-relaxed">
-                  <span className="font-semibold text-[#bb86fc]">Evening rate:</span>{" "}
-                  Bookings starting at or after {surchargeHour12}:00 {surchargeAmPm} include
-                  a ${surchargeAmount} evening surcharge.
-                </p>
-              </GlassCard>
+              {eveningRates && (
+                <GlassCard className="px-5 py-4 flex items-start gap-3" hover={false}>
+                  <Clock size={18} className="mt-0.5 flex-shrink-0" color="#bb86fc" />
+                  <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed]/80 leading-relaxed">
+                    <span className="font-semibold text-[#bb86fc]">Evening rates:</span>{" "}
+                    {eveningRates}, based on your start time.
+                  </p>
+                </GlassCard>
+              )}
 
               {/* Stack & save — multi-service discount */}
               {discountEnabled && (
@@ -147,8 +147,7 @@ export default async function PricingPage() {
                       <span className="font-semibold" style={{ color: "#e8dcc4" }}>
                         {tier3}%
                       </span>{" "}
-                      off. The discount comes off your services before the ${surchargeAmount}{" "}
-                      evening rate.
+                      off. The discount comes off your services before any evening rate.
                     </p>
                   </div>
                 </GlassCard>

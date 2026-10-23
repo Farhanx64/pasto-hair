@@ -1,8 +1,67 @@
-import type { ServiceSummary, AddonSummary, PriceSummary } from "./types";
-import { timeToMinutes } from "./slots";
+import type { ServiceSummary, AddonSummary, PriceSummary, EveningSurchargeTier } from "./types";
 
-const EVENING_SURCHARGE_START_MINUTES = 20 * 60; // 20:00 = 1200 minutes
-const EVENING_SURCHARGE_AMOUNT = 10;
+// Fallback when the booking-settings global has no tiers field at all (e.g. before
+// the migration has run). An empty array from the admin means "no evening surcharge".
+export const DEFAULT_EVENING_SURCHARGE_TIERS: EveningSurchargeTier[] = [
+  { start: "20:00", amount: 10 },
+  { start: "21:00", amount: 20 },
+];
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function hhmmToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Sanitize tiers read from the admin: drop malformed rows, sort by start time.
+// null/undefined (field missing) => defaults; [] => no surcharge.
+export function normalizeEveningTiers(
+  tiers: { start?: string | null; amount?: number | null }[] | null | undefined
+): EveningSurchargeTier[] {
+  if (!Array.isArray(tiers)) return DEFAULT_EVENING_SURCHARGE_TIERS;
+  return tiers
+    .filter(
+      (t): t is EveningSurchargeTier =>
+        typeof t?.start === "string" &&
+        HHMM.test(t.start) &&
+        typeof t.amount === "number" &&
+        Number.isFinite(t.amount) &&
+        t.amount > 0
+    )
+    .map((t) => ({ start: t.start, amount: t.amount }))
+    .sort((a, b) => hhmmToMinutes(a.start) - hhmmToMinutes(b.start));
+}
+
+// The latest tier the start time falls into. Tiers don't stack: a 21:30 booking
+// with tiers 20:00/$10 and 21:00/$20 pays $20, not $30.
+export function eveningTierFor(
+  tiers: EveningSurchargeTier[],
+  startTimeHHMM: string
+): EveningSurchargeTier | null {
+  if (!HHMM.test(startTimeHHMM)) return null;
+  const startMinutes = hhmmToMinutes(startTimeHHMM);
+  let match: EveningSurchargeTier | null = null;
+  for (const tier of normalizeEveningTiers(tiers)) {
+    if (startMinutes >= hhmmToMinutes(tier.start)) match = tier;
+  }
+  return match;
+}
+
+/** "20:00" -> "8:00 PM" */
+export function formatTime12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return `${hour}:${m.toString().padStart(2, "0")} ${period}`;
+}
+
+/** "+$10 from 8:00 PM, +$20 from 9:00 PM" */
+export function describeEveningTiers(tiers: EveningSurchargeTier[]): string {
+  return normalizeEveningTiers(tiers)
+    .map((t) => `+$${t.amount} from ${formatTime12(t.start)}`)
+    .join(", ");
+}
 
 export interface DiscountConfig {
   enabled: boolean;
@@ -18,8 +77,9 @@ function safePercent(value: number | undefined): number {
 export function calculatePrice(
   service: ServiceSummary,
   selectedAddons: AddonSummary[],
-  startTimeHHMM: string, // e.g. "20:00" — surcharge applies if >= 20:00
-  discount?: DiscountConfig // omitted or {enabled:false} => no discount
+  startTimeHHMM: string, // e.g. "20:00"
+  discount?: DiscountConfig, // omitted or {enabled:false} => no discount
+  eveningTiers: EveningSurchargeTier[] = DEFAULT_EVENING_SURCHARGE_TIERS
 ): PriceSummary {
   const basePrice = service.price;
   const addonsPrice = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
@@ -37,9 +97,9 @@ export function calculatePrice(
   }
   const discountAmount = Math.round(subtotal * discountPercent) / 100; // 2-decimal money rounding
 
-  const startMinutes = timeToMinutes(startTimeHHMM);
-  const hasEveningSurcharge = startMinutes >= EVENING_SURCHARGE_START_MINUTES;
-  const eveningSurcharge = hasEveningSurcharge ? EVENING_SURCHARGE_AMOUNT : 0;
+  const eveningTier = eveningTierFor(eveningTiers, startTimeHHMM);
+  const hasEveningSurcharge = eveningTier !== null;
+  const eveningSurcharge = eveningTier?.amount ?? 0;
 
   const total = basePrice + addonsPrice - discountAmount + eveningSurcharge;
 
@@ -47,6 +107,7 @@ export function calculatePrice(
     basePrice,
     addonsPrice,
     eveningSurcharge,
+    eveningSurchargeStart: eveningTier?.start ?? null,
     total,
     hasEveningSurcharge,
     serviceCount,

@@ -238,8 +238,10 @@ async function seedBookingSettings(payload: Awaited<ReturnType<typeof getPayload
     slug: "booking-settings",
     data: {
       slotIntervalMinutes: 15,
-      eveningSurchargeStart: "20:00",
-      eveningSurchargeAmount: 10,
+      eveningSurchargeTiers: [
+        { start: "20:00", amount: 10 },
+        { start: "21:00", amount: 20 },
+      ],
       failBehavior: "closed",
       minLeadTimeMinutes: 0,
       maxBookingWindowDays: 90,
