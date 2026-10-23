@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { isValidEmail } from "@/src/lib/booking/validation";
 
 const INPUT_CLASS =
-  "w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]";
+  "w-full rounded-xl px-4 py-3.5 text-foreground font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent/50";
 const INPUT_STYLE: React.CSSProperties = {
   background: "rgba(255,255,255,0.05)",
   border: "1px solid rgba(255,255,255,0.1)",
@@ -19,7 +19,7 @@ function Field({ label, htmlFor, children }: { label: string; htmlFor: string; c
     <div className="flex flex-col gap-1.5">
       <label
         htmlFor={htmlFor}
-        className="font-[family-name:var(--font-montserrat)] text-sm font-medium text-[#ededed]"
+        className="font-[family-name:var(--font-montserrat)] text-sm font-medium text-foreground"
       >
         {label}
       </label>
@@ -32,7 +32,7 @@ function ErrorNote({ children }: { children: React.ReactNode }) {
   return (
     <p
       role="alert"
-      className="rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] p-4 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-[#ededed]"
+      className="rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] p-4 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-foreground"
     >
       {children}
     </p>
@@ -77,18 +77,18 @@ export function SignInForm() {
   if (state === "sent") {
     return (
       <div role="status" aria-live="polite" className="text-center">
-        <p className="font-[family-name:var(--font-oswald)] text-lg uppercase tracking-[0.05em] text-[#e8dcc4]">
+        <p className="font-[family-name:var(--font-oswald)] text-lg uppercase tracking-[0.05em] text-champagne">
           Check your email
         </p>
         <p className="mt-2 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-[#8a8f98]">
           If that address can receive email, a sign-in link is on its way to{" "}
-          <span className="text-[#ededed]">{email.trim()}</span>. It works once and expires in 15
+          <span className="text-foreground">{email.trim()}</span>. It works once and expires in 15
           minutes.
         </p>
         <button
           type="button"
           onClick={() => setState("idle")}
-          className="mt-5 cursor-pointer font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-[#bb86fc]"
+          className="mt-5 cursor-pointer font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-accent"
         >
           Use a different email
         </button>
@@ -195,7 +195,7 @@ export function ProfileForm({ initialName, initialPhone }: { initialName: string
           {state === "saving" ? "Saving…" : "Save details"}
         </Button>
         {state === "saved" && (
-          <span role="status" className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc]">
+          <span role="status" className="font-[family-name:var(--font-montserrat)] text-sm text-accent">
             Saved
           </span>
         )}

@@ -763,19 +763,19 @@ function BookingPageInner() {
                         <div
                           className="flex items-center justify-between gap-3 rounded-xl px-4 py-3"
                           style={{
-                            background: "rgba(187,134,252,0.08)",
-                            border: "1px solid rgba(187,134,252,0.25)",
+                            background: "color-mix(in srgb, var(--accent) 8%, transparent)",
+                            border: "1px solid color-mix(in srgb, var(--accent) 25%, transparent)",
                             minHeight: "48px",
                           }}
                         >
-                          <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed]">
-                            <Check size={14} className="inline mr-1.5 -mt-0.5" color="#bb86fc" aria-hidden="true" />
+                          <span className="min-w-0 wrap-anywhere font-[family-name:var(--font-montserrat)] text-sm text-foreground">
+                            <Check size={14} className="inline mr-1.5 -mt-0.5 text-accent" aria-hidden="true" />
                             {appliedPromo.code} applied
                           </span>
                           <button
                             type="button"
                             onClick={removePromo}
-                            className="font-[family-name:var(--font-montserrat)] text-xs font-semibold text-[#8a8f98] hover:text-[#ededed] transition-colors duration-150 cursor-pointer"
+                            className="flex-shrink-0 font-[family-name:var(--font-montserrat)] text-xs font-semibold text-[#8a8f98] hover:text-foreground transition-colors duration-150 cursor-pointer"
                           >
                             Remove
                           </button>
@@ -801,7 +801,7 @@ function BookingPageInner() {
                             }}
                             placeholder="Enter code"
                             aria-invalid={!!promoError}
-                            className="flex-1 min-w-0 rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base uppercase placeholder:normal-case placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
+                            className="flex-1 min-w-0 rounded-xl px-4 py-3.5 text-foreground font-[family-name:var(--font-montserrat)] text-base uppercase placeholder:normal-case placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent/50"
                             style={{
                               background: "rgba(255,255,255,0.05)",
                               border: "1px solid rgba(255,255,255,0.1)",
@@ -836,10 +836,10 @@ function BookingPageInner() {
                     )}
                     {appliedPromo && (
                       <div className="flex justify-between items-start gap-4">
-                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] flex-shrink-0">
+                        <span className="min-w-0 wrap-anywhere font-[family-name:var(--font-montserrat)] text-sm text-accent">
                           Promo {appliedPromo.code} ({describePromo(appliedPromo)})
                         </span>
-                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] text-right tabular-nums">
+                        <span className="flex-shrink-0 whitespace-nowrap font-[family-name:var(--font-montserrat)] text-sm text-accent text-right tabular-nums">
                           −{money(promoDiscountAmount)}
                         </span>
                       </div>
@@ -876,19 +876,19 @@ function BookingPageInner() {
                       required
                       checked={agreedToTerms}
                       onChange={(e) => setAgreedToTerms(e.target.checked)}
-                      className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer rounded accent-[#bb86fc] focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(187,134,252,0.5)]"
+                      className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer rounded accent-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
                     />
-                    <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed] leading-relaxed">
+                    <span className="font-[family-name:var(--font-montserrat)] text-sm text-foreground leading-relaxed">
                       I agree to the{" "}
                       <a
                         href="/terms"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#bb86fc] underline underline-offset-2 hover:text-[#ededed] transition-colors duration-150"
+                        className="text-accent underline underline-offset-2 hover:text-foreground transition-colors duration-150"
                       >
                         Terms of Service
                       </a>
-                      <span className="text-[#bb86fc] ml-0.5">*</span>
+                      <span className="text-accent ml-0.5">*</span>
                     </span>
                   </label>
 
@@ -1308,14 +1308,14 @@ function SummaryRow({
   return (
     <div className="flex justify-between items-center gap-2">
       <span
-        className={`font-[family-name:var(--font-montserrat)] text-sm ${
+        className={`min-w-0 wrap-anywhere font-[family-name:var(--font-montserrat)] text-sm ${
           muted ? "text-[#8a8f98]/60" : accent ? "text-accent" : "text-[#8a8f98]"
         }`}
       >
         {label}
       </span>
       <span
-        className={`font-[family-name:var(--font-montserrat)] text-sm font-semibold tabular-nums ${
+        className={`flex-shrink-0 whitespace-nowrap font-[family-name:var(--font-montserrat)] text-sm font-semibold tabular-nums ${
           muted ? "text-[#8a8f98]/60" : accent ? "text-accent" : "text-foreground"
         }`}
       >

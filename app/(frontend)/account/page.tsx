@@ -72,7 +72,7 @@ export default async function AccountPage() {
             <div className="relative max-w-xl">
               <span className="eyebrow mb-5">Your account</span>
               <h1
-                className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-[#ededed] mt-4 mb-5"
+                className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-foreground mt-4 mb-5"
                 style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", lineHeight: 1.05 }}
               >
                 {customer ? "Account" : "Sign in"}
@@ -147,7 +147,7 @@ async function SignedIn({ customer }: { customer: Customer }) {
     <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-10">
       <div className="flex flex-col gap-12">
         <section>
-          <h2 className="font-[family-name:var(--font-oswald)] text-xl sm:text-2xl font-semibold uppercase tracking-widest text-[#ededed] mb-6">
+          <h2 className="font-[family-name:var(--font-oswald)] text-xl sm:text-2xl font-semibold uppercase tracking-widest text-foreground mb-6">
             Upcoming
           </h2>
           {upcoming.length === 0 ? (
@@ -176,7 +176,7 @@ async function SignedIn({ customer }: { customer: Customer }) {
 
         {past.length > 0 && (
           <section>
-            <h2 className="font-[family-name:var(--font-oswald)] text-xl sm:text-2xl font-semibold uppercase tracking-widest text-[#ededed] mb-6">
+            <h2 className="font-[family-name:var(--font-oswald)] text-xl sm:text-2xl font-semibold uppercase tracking-widest text-foreground mb-6">
               Past
             </h2>
             <div className="flex flex-col gap-3">
@@ -199,7 +199,7 @@ async function SignedIn({ customer }: { customer: Customer }) {
           <h2 className="font-[family-name:var(--font-oswald)] text-sm font-semibold uppercase tracking-widest text-[#8a8f98] mb-1">
             Your details
           </h2>
-          <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed] mb-5 break-all">
+          <p className="font-[family-name:var(--font-montserrat)] text-sm text-foreground mb-5 break-all">
             {customer.email}
           </p>
           <ProfileForm
@@ -238,7 +238,7 @@ function BookingRow({
         <div className="flex items-center gap-3 flex-wrap">
           <h3
             className={`font-[family-name:var(--font-oswald)] text-lg font-semibold uppercase tracking-wide ${
-              muted ? "text-[#ededed]/80" : "text-[#e8dcc4]"
+              muted ? "text-foreground/80" : "text-champagne"
             } ${cancelled ? "line-through decoration-[#f87171]" : ""}`}
           >
             {formatDateLong(booking.localDate)}
@@ -249,7 +249,7 @@ function BookingRow({
             </span>
           )}
         </div>
-        <p className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-[#ededed] mt-0.5">
+        <p className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-foreground mt-0.5">
           {formatTime(booking.localStartTime)} – {formatTime(booking.localEndTime)} ET
         </p>
         <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] mt-0.5">
@@ -259,14 +259,14 @@ function BookingRow({
       <div className="flex items-center gap-5 flex-shrink-0">
         <Link
           href={rebookHref}
-          className="font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-[#bb86fc] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)]"
+          className="font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-accent rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50"
         >
           Book again
         </Link>
         {cancelHref && (
           <Link
             href={cancelHref}
-            className="font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-[#f87171] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)]"
+            className="font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-[#f87171] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50"
           >
             Cancel
           </Link>

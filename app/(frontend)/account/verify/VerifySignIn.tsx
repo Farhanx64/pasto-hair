@@ -64,7 +64,7 @@ export function VerifySignIn() {
         </p>
         <a
           href="/account"
-          className="mt-6 inline-block font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-[#bb86fc]"
+          className="mt-6 inline-block font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-accent"
         >
           Request a new link
         </a>

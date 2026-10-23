@@ -263,7 +263,7 @@ function detailRow(label: string, value: string, opts?: { accent?: boolean }): s
   const weight = opts?.accent ? "600" : "500";
   return `                <tr>
                   <td class="stack" width="38%" style="padding:9px 0;font-family:${FONT_BODY};font-size:12px;line-height:18px;color:${C.muted};letter-spacing:0.06em;text-transform:uppercase;vertical-align:top;">${label}</td>
-                  <td class="stack" style="padding:9px 0;font-family:${FONT_BODY};font-size:15px;line-height:22px;color:${color};font-weight:${weight};vertical-align:top;">${value}</td>
+                  <td class="stack" style="padding:9px 0;font-family:${FONT_BODY};font-size:15px;line-height:22px;color:${color};font-weight:${weight};vertical-align:top;word-break:break-word;overflow-wrap:anywhere;">${value}</td>
                 </tr>`;
 }
 

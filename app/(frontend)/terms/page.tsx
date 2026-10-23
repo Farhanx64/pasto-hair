@@ -62,7 +62,7 @@ export default async function TermsPage() {
             <Reveal className="relative">
               <span className="eyebrow mb-5">The fine print</span>
               <h1
-                className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-[#ededed] mt-4 mb-5"
+                className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-foreground mt-4 mb-5"
                 style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", lineHeight: 1.05 }}
               >
                 Terms of Service
@@ -83,7 +83,7 @@ export default async function TermsPage() {
             </Reveal>
           ) : (
             <GlassCard className="px-6 py-10 text-center" hover={false}>
-              <p className="font-[family-name:var(--font-oswald)] text-lg uppercase tracking-wide text-[#ededed] mb-2">
+              <p className="font-[family-name:var(--font-oswald)] text-lg uppercase tracking-wide text-foreground mb-2">
                 Terms coming soon
               </p>
               <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98]">
@@ -102,16 +102,16 @@ export default async function TermsPage() {
               <ul className="flex flex-col gap-3">
                 {contact.map(({ icon: Icon, label, href }) => (
                   <li key={label} className="flex items-center gap-3">
-                    <Icon size={16} className="flex-shrink-0" color="#bb86fc" aria-hidden="true" />
+                    <Icon size={16} className="flex-shrink-0 text-accent" aria-hidden="true" />
                     {href ? (
                       <a
                         href={href}
-                        className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed] hover:text-[#bb86fc] transition-colors duration-150 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)]"
+                        className="font-[family-name:var(--font-montserrat)] text-sm text-foreground hover:text-accent transition-colors duration-150 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50"
                       >
                         {label}
                       </a>
                     ) : (
-                      <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed]">
+                      <span className="font-[family-name:var(--font-montserrat)] text-sm text-foreground">
                         {label}
                       </span>
                     )}

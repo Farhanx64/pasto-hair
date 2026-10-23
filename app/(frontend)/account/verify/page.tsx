@@ -18,10 +18,10 @@ export default function VerifyPage() {
     <PageWrapper className="flex flex-1 items-center justify-center px-5 py-24">
       <div className="w-full max-w-[440px]">
         <GlassCard className="p-8" hover={false}>
-          <p className="font-[family-name:var(--font-oswald)] text-[11px] font-semibold uppercase tracking-[0.18em] text-[#bb86fc] text-center">
+          <p className="font-[family-name:var(--font-oswald)] text-[11px] font-semibold uppercase tracking-[0.18em] text-accent text-center">
             Your account
           </p>
-          <h1 className="mt-3 mb-6 font-[family-name:var(--font-oswald)] text-3xl font-semibold uppercase tracking-[0.04em] text-[#e8dcc4] text-center">
+          <h1 className="mt-3 mb-6 font-[family-name:var(--font-oswald)] text-3xl font-semibold uppercase tracking-[0.04em] text-champagne text-center">
             Sign in to Pasto Hair
           </h1>
           <VerifySignIn />
