@@ -152,6 +152,28 @@ function BookingPageInner() {
     time: string;
   } | null>(null);
 
+  // ── Signed-in prefill ──
+  // If the customer has an account session, fill in whatever contact fields
+  // are still empty (a rebook link's values win). Signed out is the normal
+  // case and changes nothing — booking never requires an account.
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/account/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.signedIn) return;
+        setName((v) => v || data.name || "");
+        setEmail((v) => v || data.email || "");
+        setPhone((v) => v || data.phone || "");
+      })
+      .catch(() => {
+        // prefill is a convenience — ignore failures
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // ── Load services + addons on mount ──
   React.useEffect(() => {
     async function load() {

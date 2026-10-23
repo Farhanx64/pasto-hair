@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/Button";
 const NAV_LINKS = [
   { href: "/pricing", label: "Pricing" },
   { href: "/gallery", label: "Gallery" },
+  // One label for both states: the session cookie is httpOnly, so the nav
+  // can't tell signed-in from signed-out — /account shows the right thing.
+  { href: "/account", label: "Account" },
 ];
 
 export function Navbar() {
