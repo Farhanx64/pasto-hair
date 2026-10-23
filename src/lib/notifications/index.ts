@@ -699,6 +699,85 @@ function buildCancellationText(data: CancellationNoticeData): string {
 }
 
 // ---------------------------------------------------------------------------
+// Account sign-in link (customer)
+// ---------------------------------------------------------------------------
+
+/**
+ * The token rides in the URL fragment, not the query string: fragments are
+ * never sent to the server, so the token stays out of access logs and out of
+ * any Referer header. The landing page reads it client-side and only spends it
+ * on an explicit click (see app/(frontend)/account/verify).
+ */
+export function buildSignInUrl(token: string): string {
+  return `${SITE}/account/verify#token=${encodeURIComponent(token)}`;
+}
+
+export function buildSignInHtml(url: string): string {
+  const body = `${headerRow()}
+
+          <tr>
+            <td align="center" class="px" style="padding:30px 40px 0;">
+              <div style="font-family:${FONT_HEAD};font-size:12px;line-height:16px;color:${C.accent};letter-spacing:0.18em;text-transform:uppercase;font-weight:600;">Your Account</div>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" class="px" style="padding:14px 40px 0;">
+              <div class="hero" style="font-family:${FONT_HEAD};font-size:34px;line-height:40px;color:${C.champagne};font-weight:600;letter-spacing:0.02em;mso-line-height-rule:exactly;">Sign in to Pasto Hair</div>
+              <div style="padding-top:12px;font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.muted};">
+                Tap the button below to sign in. The link works once and expires in 15 minutes.
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" class="px" style="padding:28px 40px 0;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" bgcolor="${C.accent}" style="background-color:${C.accent};border-radius:999px;">
+                    <a href="${esc(url)}" style="display:inline-block;padding:14px 34px;font-family:${FONT_BODY};font-size:14px;line-height:20px;color:${C.bg};font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Sign in</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:30px 40px 0;">
+${rule()}
+            </td>
+          </tr>
+
+          <tr>
+            <td class="px" style="padding:20px 40px 36px;">
+              <div style="font-family:${FONT_BODY};font-size:12px;line-height:19px;color:${C.muted};">
+                Didn&rsquo;t ask for this? You can ignore it &mdash; nobody can sign in without this email.
+              </div>
+            </td>
+          </tr>`;
+
+  return layout({
+    title: "Sign in — Pasto Hair",
+    preheader: "Your sign-in link for Pasto Hair. It works once and expires in 15 minutes.",
+    body,
+  });
+}
+
+export function buildSignInText(url: string): string {
+  return [
+    "SIGN IN TO PASTO HAIR",
+    "",
+    "Open this link to sign in. It works once and expires in 15 minutes:",
+    url,
+    "",
+    "Didn't ask for this? You can ignore it — nobody can sign in without this email.",
+    "",
+    "Pasto Hair · New York",
+    "Automated message — please don't reply to this address.",
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -791,5 +870,33 @@ export async function sendCancellationNotice(
     subject: `Cancelled: ${data.customerName} — ${formatDateShort(data.localDate)} ${formatTime(data.localStartTime)}`,
     html: buildCancellationHtml(data),
     text: buildCancellationText(data),
+  });
+}
+
+/** Emails a customer their single-use sign-in link. */
+export async function sendSignInLinkEmail(to: string, token: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM;
+  const url = buildSignInUrl(token);
+
+  if (!apiKey || !from) {
+    // The link is a credential: only ever print it in local dev, so a
+    // misconfigured production server can't leak sign-ins into its logs.
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[notifications] Email not configured. Dev sign-in link for", to, "→", url);
+    } else {
+      console.log("[notifications] RESEND_API_KEY or EMAIL_FROM not configured. Sign-in link not sent.");
+    }
+    return;
+  }
+
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from,
+    to,
+    subject: "Your Pasto Hair sign-in link",
+    html: buildSignInHtml(url),
+    text: buildSignInText(url),
   });
 }
