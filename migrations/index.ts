@@ -5,6 +5,7 @@ import * as migration_20260716_070516 from './20260716_070516';
 import * as migration_20261023_025818_tiered_evening_surcharge from './20261023_025818_tiered_evening_surcharge';
 import * as migration_20261023_034626_theme_colors from './20261023_034626_theme_colors';
 import * as migration_20261023_034645_terms_of_service from './20261023_034645_terms_of_service';
+import * as migration_20261023_034755_promo_codes from './20261023_034755_promo_codes';
 
 export const migrations = [
   {
@@ -40,6 +41,11 @@ export const migrations = [
   {
     up: migration_20261023_034645_terms_of_service.up,
     down: migration_20261023_034645_terms_of_service.down,
-    name: '20261023_034645_terms_of_service'
+    name: '20261023_034645_terms_of_service',
+  },
+  {
+    up: migration_20261023_034755_promo_codes.up,
+    down: migration_20261023_034755_promo_codes.down,
+    name: '20261023_034755_promo_codes'
   },
 ];
