@@ -12,6 +12,7 @@ import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifica
 import { checkRateLimit, getClientIp } from "@/src/lib/booking/rate-limit";
 import { hasAcceptedTerms, isValidEmail } from "@/src/lib/booking/validation";
 import { checkPromoCode, normalizePromoCode } from "@/src/lib/booking/promo";
+import { claimPromoUse, releasePromoUse } from "@/src/lib/booking/promo-usage";
 
 // Public booking submission endpoint.
 //
@@ -285,6 +286,20 @@ export async function POST(request: Request) {
       promo,
     );
 
+    // 10a. Take one use of the promo before anything is created. The check above
+    // can pass for two bookings at once on a code's last use; this atomic claim
+    // lets only one of them have it.
+    if (promoDocId !== null && !(await claimPromoUse(payload, promoDocId))) {
+      return Response.json(
+        {
+          success: false,
+          promoInvalid: true,
+          message: "That promo code has reached its usage limit. Remove it to book at the regular price.",
+        },
+        { status: 400 },
+      );
+    }
+
     // 11. Check for race-condition duplicate on calendar right before creating event
     let calendarEventId: string | undefined;
     const existingEventId = await findEventBySubmissionId(calendarId, submissionId, localDate);
@@ -350,23 +365,15 @@ export async function POST(request: Request) {
         calendarEventId: calendarEventId ?? null,
         termsAcceptedAt: new Date().toISOString(),
       },
-    });
-
-    // 13a. Count the promo use. Non-fatal: the booking is already made, and a missed
-    // count shouldn't turn it into an error for the customer. Re-read just
-    // before writing so a concurrent booking's count isn't overwritten.
-    if (promoDocId !== null) {
-      try {
-        const current = await payload.findByID({ collection: "promo-codes", id: promoDocId });
-        await payload.update({
-          collection: "promo-codes",
-          id: promoDocId,
-          data: { timesUsed: (current.timesUsed ?? 0) + 1 },
-        });
-      } catch (err) {
-        console.error("[bookings] Promo usage count failed (non-fatal):", err);
+    }).catch(async (err) => {
+      // The booking didn't save, so it shouldn't keep the promo use claimed in 10a.
+      if (promoDocId !== null) {
+        await releasePromoUse(payload, promoDocId).catch((releaseErr) =>
+          console.error("[bookings] Promo use release failed:", releaseErr),
+        );
       }
-    }
+      throw err;
+    });
 
     // 14. Send confirmation email + owner notification (non-blocking — failure does not fail the booking)
     const emailData = {

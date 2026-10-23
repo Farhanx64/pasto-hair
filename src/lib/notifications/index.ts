@@ -353,7 +353,7 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
   const surchargeNote = hasEveningSurcharge
     ? `                <tr>
                   <td colspan="2" style="padding:4px 0 0;font-family:${FONT_BODY};font-size:12px;line-height:18px;color:${C.muted};">
-                    Includes a $${eveningSurchargeAmount} evening surcharge${eveningSurchargeStart ? ` (${formatTime(eveningSurchargeStart)} or later)` : ""}.
+                    Includes a ${money(eveningSurchargeAmount)} evening surcharge${eveningSurchargeStart ? ` (${formatTime(eveningSurchargeStart)} or later)` : ""}.
                   </td>
                 </tr>`
     : "";
@@ -382,7 +382,7 @@ export function buildCustomerHtml(data: BookingConfirmationData): string {
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
 ${detailRow("Service", serviceLine)}
 ${promoCode ? detailRow("Promo", esc(promoLabel(promoCode, promoDiscountAmount))) : ""}
-${detailRow("Total", `$${totalPrice}`, { accent: true })}
+${detailRow("Total", `${money(totalPrice)}`, { accent: true })}
 ${surchargeNote}
                     </table>
                   </td>
@@ -454,11 +454,11 @@ export function buildCustomerText(data: BookingConfirmationData): string {
     "",
     `Service: ${service}${addons.length > 0 ? ` + ${addons.join(", ")}` : ""}`,
     ...(promoCode ? [`Promo:   ${promoLabel(promoCode, promoDiscountAmount)}`] : []),
-    `Total:   $${totalPrice}`,
+    `Total:   ${money(totalPrice)}`,
   ];
 
   if (hasEveningSurcharge) {
-    lines.push(`         (includes $${eveningSurchargeAmount} evening surcharge${eveningSurchargeStart ? `, ${formatTime(eveningSurchargeStart)} or later` : ""})`);
+    lines.push(`         (includes ${money(eveningSurchargeAmount)} evening surcharge${eveningSurchargeStart ? `, ${formatTime(eveningSurchargeStart)} or later` : ""})`);
   }
 
   if (business?.address) {
@@ -551,7 +551,7 @@ export function buildOwnerHtml(data: BookingConfirmationData): string {
 ${detailRow("Service", serviceLine)}
 ${detailRow("Duration", esc(durationLabel(localStartTime, localEndTime)))}
 ${promoCode ? detailRow("Promo", esc(promoLabel(promoCode, promoDiscountAmount))) : ""}
-${detailRow("Total", `$${totalPrice}${hasEveningSurcharge ? ` <span style="font-size:12px;font-weight:400;color:${C.muted};">incl. $${eveningSurchargeAmount} evening</span>` : ""}`, { accent: true })}
+${detailRow("Total", `${money(totalPrice)}${hasEveningSurcharge ? ` <span style="font-size:12px;font-weight:400;color:${C.muted};">incl. ${money(eveningSurchargeAmount)} evening</span>` : ""}`, { accent: true })}
                     </table>
                   </td>
                 </tr>
@@ -576,7 +576,7 @@ ${notesBlock}
 
   return layout({
     title: "New Booking — Pasto Hair",
-    preheader: `${customerName} — ${service}, ${formatDateShort(localDate)} at ${formatTime(localStartTime)}. $${totalPrice}.`,
+    preheader: `${customerName} — ${service}, ${formatDateShort(localDate)} at ${formatTime(localStartTime)}. ${money(totalPrice)}.`,
     body,
   });
 }
@@ -608,7 +608,7 @@ export function buildOwnerText(data: BookingConfirmationData): string {
     "",
     `Service: ${service}${addons.length > 0 ? ` + ${addons.join(", ")}` : ""}`,
     ...(promoCode ? [`Promo:   ${promoLabel(promoCode, promoDiscountAmount)}`] : []),
-    `Total:   $${totalPrice}${hasEveningSurcharge ? ` (incl. $${eveningSurchargeAmount} evening surcharge)` : ""}`,
+    `Total:   ${money(totalPrice)}${hasEveningSurcharge ? ` (incl. ${money(eveningSurchargeAmount)} evening surcharge)` : ""}`,
     "",
     "CONTACT",
     `Phone: ${customerPhone}`,

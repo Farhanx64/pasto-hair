@@ -6,6 +6,34 @@ export const Bookings: CollectionConfig = {
     useAsTitle: "customerName",
     defaultColumns: ["customerName", "service", "localDate", "localStartTime", "status"],
   },
+  hooks: {
+    afterChange: [
+      // A cancelled booking gives its promo use back, whether it was cancelled
+      // from the email link or in the admin. Local API with `req` (not the raw
+      // SQL in promo-usage.ts) so the write joins this update's transaction.
+      async ({ doc, previousDoc, operation, req }) => {
+        if (operation !== "update" || !doc.promoCode) return doc;
+        if (previousDoc?.status === "cancelled" || doc.status !== "cancelled") return doc;
+        const found = await req.payload.find({
+          collection: "promo-codes",
+          where: { code: { equals: doc.promoCode } },
+          limit: 1,
+          depth: 0,
+          req,
+        });
+        const promo = found.docs[0];
+        if (promo && (promo.timesUsed ?? 0) > 0) {
+          await req.payload.update({
+            collection: "promo-codes",
+            id: promo.id,
+            data: { timesUsed: (promo.timesUsed ?? 0) - 1 },
+            req,
+          });
+        }
+        return doc;
+      },
+    ],
+  },
   fields: [
     {
       name: "submissionId",
