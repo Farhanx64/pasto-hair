@@ -12,7 +12,7 @@ interface AmbientProps {
  * overflow hidden if the blob should clip to the section.
  */
 export function Ambient({ className = "", color = "violet", size = 520 }: AmbientProps) {
-  const rgb = color === "violet" ? "187,134,252" : "232,220,196";
+  const tone = color === "violet" ? "var(--accent)" : "var(--champagne)";
   return (
     <div
       aria-hidden="true"
@@ -20,7 +20,7 @@ export function Ambient({ className = "", color = "violet", size = 520 }: Ambien
       style={{
         width: size,
         height: size,
-        background: `radial-gradient(circle, rgba(${rgb},0.07) 0%, rgba(${rgb},0.03) 40%, transparent 70%)`,
+        background: `radial-gradient(circle, color-mix(in srgb, ${tone} 7%, transparent) 0%, color-mix(in srgb, ${tone} 3%, transparent) 40%, transparent 70%)`,
       }}
     />
   );

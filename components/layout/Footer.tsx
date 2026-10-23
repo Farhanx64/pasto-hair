@@ -77,7 +77,7 @@ export function Footer({ hideMobileCTA = false }: { hideMobileCTA?: boolean } = 
         <div
           className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 py-3"
           style={{
-            background: "rgba(10,10,12,0.95)",
+            background: "color-mix(in srgb, var(--background) 95%, transparent)",
             backdropFilter: "blur(16px)",
             WebkitBackdropFilter: "blur(16px)",
             borderTop: "1px solid rgba(255,255,255,0.08)",
@@ -99,7 +99,7 @@ function FooterLink({ href, children }: { href: string; children: React.ReactNod
   return (
     <Link
       href={href}
-      className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] hover:text-[#ededed] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded"
+      className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] hover:text-foreground transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50 rounded"
     >
       {children}
     </Link>
@@ -121,7 +121,7 @@ function SocialLink({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="flex items-center justify-center w-10 h-10 rounded-full text-[#8a8f98] hover:text-[#bb86fc] transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)]"
+      className="flex items-center justify-center w-10 h-10 rounded-full text-[#8a8f98] hover:text-accent transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50"
       style={{ background: "rgba(255,255,255,0.04)" }}
     >
       {children}

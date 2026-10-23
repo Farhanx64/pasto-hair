@@ -48,7 +48,7 @@ function Message({ title, body }: { title: string; body: string }) {
   return (
     <Shell>
       <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] p-8 text-center backdrop-blur-[12px]">
-        <h1 className="font-[family-name:var(--font-oswald)] text-2xl uppercase tracking-[0.05em] text-[#ededed]">
+        <h1 className="font-[family-name:var(--font-oswald)] text-2xl uppercase tracking-[0.05em] text-foreground">
           {title}
         </h1>
         <p className="mt-3 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-[#8a8f98]">
@@ -56,7 +56,7 @@ function Message({ title, body }: { title: string; body: string }) {
         </p>
         <a
           href="/"
-          className="mt-7 inline-block font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-[#bb86fc]"
+          className="mt-7 inline-block font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-accent"
         >
           Back to site
         </a>
@@ -119,10 +119,10 @@ export default async function CancelPage({ params }: Args) {
           Cancel appointment
         </p>
 
-        <h1 className="mt-3 font-[family-name:var(--font-oswald)] text-3xl font-semibold tracking-[0.02em] text-[#e8dcc4]">
+        <h1 className="mt-3 font-[family-name:var(--font-oswald)] text-3xl font-semibold tracking-[0.02em] text-champagne">
           {formatDateLong(booking.localDate)}
         </h1>
-        <p className="mt-1.5 font-[family-name:var(--font-montserrat)] text-base font-semibold text-[#ededed]">
+        <p className="mt-1.5 font-[family-name:var(--font-montserrat)] text-base font-semibold text-foreground">
           {formatTime(booking.localStartTime)} – {formatTime(booking.localEndTime)} ET
         </p>
 
@@ -130,7 +130,7 @@ export default async function CancelPage({ params }: Args) {
           <dl className="space-y-2.5 font-[family-name:var(--font-montserrat)] text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-[#8a8f98]">Service</dt>
-              <dd className="text-right font-medium text-[#ededed]">
+              <dd className="text-right font-medium text-foreground">
                 {booking.service}
                 {addons.length > 0 && (
                   <span className="text-[#8a8f98]"> + {addons.join(", ")}</span>
@@ -139,7 +139,7 @@ export default async function CancelPage({ params }: Args) {
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-[#8a8f98]">Booked for</dt>
-              <dd className="text-right font-medium text-[#ededed]">{booking.customerName}</dd>
+              <dd className="text-right font-medium text-foreground">{booking.customerName}</dd>
             </div>
           </dl>
         </div>
@@ -147,7 +147,7 @@ export default async function CancelPage({ params }: Args) {
         {tooLate ? (
           <p
             role="alert"
-            className="mt-6 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] p-4 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-[#ededed]"
+            className="mt-6 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] p-4 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-foreground"
           >
             It&rsquo;s too close to your appointment to cancel online. Please give us a call
             and we&rsquo;ll take care of it.

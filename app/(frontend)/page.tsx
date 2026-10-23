@@ -126,7 +126,7 @@ export default async function HomePage() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(10,10,12,0.55) 0%, rgba(10,10,12,0.70) 60%, rgba(10,10,12,0.95) 100%)",
+              "linear-gradient(to bottom, color-mix(in srgb, var(--background) 55%, transparent) 0%, color-mix(in srgb, var(--background) 70%, transparent) 60%, color-mix(in srgb, var(--background) 95%, transparent) 100%)",
           }}
         />
 
@@ -144,12 +144,12 @@ export default async function HomePage() {
             priority
           />
           <h1
-            className="font-[family-name:var(--font-oswald)] font-bold uppercase leading-none text-[#ededed]"
+            className="font-[family-name:var(--font-oswald)] font-bold uppercase leading-none text-foreground"
             style={{ fontSize: "clamp(3rem, 10vw, 7rem)", letterSpacing: "0.06em" }}
           >
             PASTO HAIR
           </h1>
-          <p className="font-[family-name:var(--font-montserrat)] text-lg sm:text-xl text-[#ededed]/80 max-w-md text-balance">
+          <p className="font-[family-name:var(--font-montserrat)] text-lg sm:text-xl text-foreground/80 max-w-md text-balance">
             Built for sharp cuts and sharper presence.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
@@ -174,7 +174,7 @@ export default async function HomePage() {
             className="w-px h-8"
             style={{
               background:
-                "linear-gradient(to bottom, rgba(187,134,252,0.6), transparent)",
+                "linear-gradient(to bottom, color-mix(in srgb, var(--accent) 60%, transparent), transparent)",
               animation: "scrollPulse 2s ease-in-out infinite",
             }}
           />
@@ -187,7 +187,7 @@ export default async function HomePage() {
         <div className="relative max-w-[1200px] mx-auto">
           <Reveal className="mb-12 max-w-xl">
             <span className="eyebrow">The standard</span>
-            <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-semibold uppercase tracking-widest text-[#ededed]">
+            <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-semibold uppercase tracking-widest text-foreground">
               Why Pasto Hair
             </h2>
           </Reveal>
@@ -199,14 +199,14 @@ export default async function HomePage() {
                 <div
                   className="absolute top-6 right-6 w-14 h-14 rounded-xl flex items-center justify-center"
                   style={{
-                    background: "rgba(187,134,252,0.1)",
-                    border: "1px solid rgba(187,134,252,0.2)",
+                    background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
                   }}
                 >
-                  <featuredProp.icon size={26} color="#bb86fc" strokeWidth={1.5} />
+                  <featuredProp.icon className="text-accent" size={26} strokeWidth={1.5} />
                 </div>
                 <div className="mt-auto pt-16 max-w-sm">
-                  <h3 className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-wide text-[#ededed]">
+                  <h3 className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-wide text-foreground">
                     {featuredProp.headline}
                   </h3>
                   <p className="mt-3 font-[family-name:var(--font-montserrat)] text-base text-[#8a8f98] leading-relaxed">
@@ -228,14 +228,14 @@ export default async function HomePage() {
                     <div
                       className="w-12 h-12 rounded-xl flex items-center justify-center"
                       style={{
-                        background: "rgba(187,134,252,0.1)",
-                        border: "1px solid rgba(187,134,252,0.2)",
+                        background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+                        border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
                       }}
                     >
-                      <Icon size={22} color="#bb86fc" strokeWidth={1.5} />
+                      <Icon className="text-accent" size={22} strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h3 className="font-[family-name:var(--font-oswald)] text-xl font-semibold uppercase tracking-wide text-[#ededed]">
+                      <h3 className="font-[family-name:var(--font-oswald)] text-xl font-semibold uppercase tracking-wide text-foreground">
                         {headline}
                       </h3>
                       <p className="mt-2 font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] leading-relaxed">
@@ -258,7 +258,7 @@ export default async function HomePage() {
         <div className="max-w-[1200px] mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
             <div>
-              <h2 className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-[#ededed]">
+              <h2 className="font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-foreground">
                 Services
               </h2>
               <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] mt-1">
@@ -267,7 +267,7 @@ export default async function HomePage() {
             </div>
             <Link
               href="/pricing"
-              className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] hover:text-[#ededed] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded"
+              className="font-[family-name:var(--font-montserrat)] text-sm text-accent hover:text-foreground transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50 rounded"
             >
               See full pricing →
             </Link>
@@ -285,7 +285,7 @@ export default async function HomePage() {
                 <Reveal key={service.id} delay={0.08 * i}>
                   <GlassCard className="h-full p-6 flex flex-col gap-4">
                     <div className="flex-1">
-                      <h3 className="font-[family-name:var(--font-oswald)] text-lg font-semibold uppercase tracking-wide text-[#ededed]">
+                      <h3 className="font-[family-name:var(--font-oswald)] text-lg font-semibold uppercase tracking-wide text-foreground">
                         {service.name}
                       </h3>
                       {service.description && (
@@ -298,7 +298,7 @@ export default async function HomePage() {
                     <div className="flex items-center justify-between">
                       <span
                         className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
-                        style={{ color: "#e8dcc4" }}
+                        style={{ color: "var(--champagne)" }}
                       >
                         ${service.price}
                       </span>
@@ -312,7 +312,7 @@ export default async function HomePage() {
 
                     <Link
                       href={`/booking?service=${service.id}`}
-                      className="mt-auto flex items-center gap-1.5 font-[family-name:var(--font-montserrat)] text-sm font-medium text-[#bb86fc] hover:text-[#ededed] transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded"
+                      className="mt-auto flex items-center gap-1.5 font-[family-name:var(--font-montserrat)] text-sm font-medium text-accent hover:text-foreground transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50 rounded"
                     >
                       Book This <ArrowRight size={14} />
                     </Link>
@@ -335,7 +335,7 @@ export default async function HomePage() {
           <div className="relative max-w-[1200px] mx-auto">
             <Reveal className="mb-12 max-w-xl">
               <span className="eyebrow">From the chair</span>
-              <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-semibold uppercase tracking-widest text-[#ededed]">
+              <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-3xl sm:text-4xl font-semibold uppercase tracking-widest text-foreground">
                 The verdict
               </h2>
             </Reveal>
@@ -345,17 +345,17 @@ export default async function HomePage() {
               <Reveal className="md:col-span-7" delay={0}>
                 <GlassCard className="relative h-full p-8 sm:p-10 flex flex-col">
                   <Quote
+                    className="text-accent"
                     size={44}
-                    color="#bb86fc"
                     strokeWidth={1.5}
                     aria-hidden="true"
                   />
-                  <blockquote className="mt-6 font-[family-name:var(--font-montserrat)] text-xl sm:text-2xl leading-relaxed text-[#ededed]">
+                  <blockquote className="mt-6 font-[family-name:var(--font-montserrat)] text-xl sm:text-2xl leading-relaxed text-foreground">
                     “{featuredTestimonial.quote}”
                   </blockquote>
                   <figcaption
                     className="mt-auto pt-8 font-[family-name:var(--font-montserrat)] text-sm font-semibold uppercase tracking-widest"
-                    style={{ color: "#e8dcc4" }}
+                    style={{ color: "var(--champagne)" }}
                   >
                     {featuredTestimonial.customerName}
                   </figcaption>
@@ -373,17 +373,17 @@ export default async function HomePage() {
                     >
                       <GlassCard className="h-full p-7 flex flex-col">
                         <Quote
+                          className="text-accent"
                           size={24}
-                          color="#bb86fc"
                           strokeWidth={1.5}
                           aria-hidden="true"
                         />
-                        <blockquote className="mt-4 font-[family-name:var(--font-montserrat)] text-base leading-relaxed text-[#ededed]/90">
+                        <blockquote className="mt-4 font-[family-name:var(--font-montserrat)] text-base leading-relaxed text-foreground/90">
                           “{t.quote}”
                         </blockquote>
                         <figcaption
                           className="mt-auto pt-5 font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-widest"
-                          style={{ color: "#e8dcc4" }}
+                          style={{ color: "var(--champagne)" }}
                         >
                           {t.customerName}
                         </figcaption>
@@ -403,13 +403,13 @@ export default async function HomePage() {
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12">
             <div>
               <span className="eyebrow">Recent work</span>
-              <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-[#ededed]">
+              <h2 className="mt-4 font-[family-name:var(--font-oswald)] text-2xl sm:text-3xl font-semibold uppercase tracking-widest text-foreground">
                 Gallery
               </h2>
             </div>
             <Link
               href="/gallery"
-              className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] hover:text-[#ededed] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded"
+              className="font-[family-name:var(--font-montserrat)] text-sm text-accent hover:text-foreground transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50 rounded"
             >
               View all →
             </Link>
@@ -426,7 +426,7 @@ export default async function HomePage() {
                     <Link
                       key={item.id}
                       href="/gallery"
-                      className={`group relative overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.08)] aspect-square focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] ${
+                      className={`group relative overflow-hidden rounded-2xl border border-[rgba(255,255,255,0.08)] aspect-square focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50 ${
                         isFeatured
                           ? "col-span-2 md:col-span-2 md:row-span-2 md:aspect-auto"
                           : ""

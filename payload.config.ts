@@ -18,6 +18,7 @@ import { GalleryItems } from "./collections/GalleryItems";
 import { Testimonials } from "./collections/Testimonials";
 import { BusinessSettings } from "./globals/BusinessSettings";
 import { BookingSettings } from "./globals/BookingSettings";
+import { Theme } from "./globals/Theme";
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -36,7 +37,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Services, Addons, Staff, AvailabilityRules, BlockedDates, Bookings, GalleryItems, Testimonials],
-  globals: [BusinessSettings, BookingSettings],
+  globals: [BusinessSettings, BookingSettings, Theme],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || "",
   typescript: {

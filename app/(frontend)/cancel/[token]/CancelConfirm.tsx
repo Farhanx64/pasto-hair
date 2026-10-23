@@ -49,7 +49,7 @@ export function CancelConfirm({ token }: { token: string }) {
         aria-live="polite"
         className="mt-6 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#0f0f12] p-5 text-center"
       >
-        <p className="font-[family-name:var(--font-oswald)] text-lg uppercase tracking-[0.05em] text-[#e8dcc4]">
+        <p className="font-[family-name:var(--font-oswald)] text-lg uppercase tracking-[0.05em] text-champagne">
           Cancelled
         </p>
         <p className="mt-2 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-[#8a8f98]">
@@ -58,7 +58,7 @@ export function CancelConfirm({ token }: { token: string }) {
         </p>
         <a
           href="/booking"
-          className="mt-5 inline-block font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-[#bb86fc]"
+          className="mt-5 inline-block font-[family-name:var(--font-montserrat)] text-xs font-semibold uppercase tracking-[0.1em] text-accent"
         >
           Book another time
         </a>
@@ -71,7 +71,7 @@ export function CancelConfirm({ token }: { token: string }) {
       {state === "error" && (
         <p
           role="alert"
-          className="mb-4 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] p-4 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-[#ededed]"
+          className="mb-4 rounded-xl border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.08)] p-4 font-[family-name:var(--font-montserrat)] text-sm leading-6 text-foreground"
         >
           {error}
         </p>

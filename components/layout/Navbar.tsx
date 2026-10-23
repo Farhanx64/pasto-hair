@@ -23,7 +23,7 @@ export function Navbar() {
     <header
       className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center px-4 sm:px-6 lg:px-8"
       style={{
-        background: "rgba(10,10,12,0.85)",
+        background: "color-mix(in srgb, var(--background) 85%, transparent)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
@@ -35,7 +35,7 @@ export function Navbar() {
           href="/"
           onClick={close}
           aria-label="Pasto Hair — home"
-          className="flex items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[rgba(187,134,252,0.5)] rounded-lg"
+          className="flex items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent/50 rounded-lg"
         >
           <Image
             src="/logo.png"
@@ -46,7 +46,7 @@ export function Navbar() {
             className="object-contain"
             priority
           />
-          <span className="font-[family-name:var(--font-oswald)] text-xl font-semibold uppercase tracking-widest text-[#ededed]">
+          <span className="font-[family-name:var(--font-oswald)] text-xl font-semibold uppercase tracking-widest text-foreground">
             Pasto Hair
           </span>
         </Link>
@@ -69,7 +69,7 @@ export function Navbar() {
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
-          className="md:hidden flex items-center justify-center w-11 h-11 rounded-lg cursor-pointer text-[#ededed] hover:text-[#bb86fc] transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] [touch-action:manipulation]"
+          className="md:hidden flex items-center justify-center w-11 h-11 rounded-lg cursor-pointer text-foreground hover:text-accent transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50 [touch-action:manipulation]"
         >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -81,7 +81,7 @@ export function Navbar() {
         aria-hidden={!mobileOpen}
         className="md:hidden absolute top-16 left-0 right-0 overflow-hidden"
         style={{
-          background: "rgba(10,10,12,0.97)",
+          background: "color-mix(in srgb, var(--background) 97%, transparent)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           borderBottom: mobileOpen ? "1px solid rgba(255,255,255,0.06)" : "none",
@@ -128,8 +128,8 @@ function NavLink({
       href={href}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className={`font-[family-name:var(--font-montserrat)] text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] rounded ${
-        active ? "text-[#bb86fc]" : "text-[#8a8f98] hover:text-[#ededed]"
+      className={`font-[family-name:var(--font-montserrat)] text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50 rounded ${
+        active ? "text-accent" : "text-[#8a8f98] hover:text-foreground"
       }`}
     >
       {children}
@@ -153,8 +153,8 @@ function MobileNavLink({
       href={href}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className={`font-[family-name:var(--font-montserrat)] text-base font-medium transition-colors duration-150 px-3 py-3 rounded-lg hover:bg-[rgba(255,255,255,0.04)] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)] [touch-action:manipulation] ${
-        active ? "text-[#bb86fc]" : "text-[#ededed] hover:text-[#bb86fc]"
+      className={`font-[family-name:var(--font-montserrat)] text-base font-medium transition-colors duration-150 px-3 py-3 rounded-lg hover:bg-[rgba(255,255,255,0.04)] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50 [touch-action:manipulation] ${
+        active ? "text-accent" : "text-foreground hover:text-accent"
       }`}
     >
       {children}

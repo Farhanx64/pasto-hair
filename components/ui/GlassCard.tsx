@@ -11,7 +11,7 @@ export function GlassCard({ className = "", children, hover = true }: GlassCardP
     <div
       className={`rounded-2xl border transition-all duration-200 ${
         hover
-          ? "hover:border-[rgba(187,134,252,0.2)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_20px_rgba(187,134,252,0.08)]"
+          ? "hover:border-accent/20 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_20px_color-mix(in_srgb,var(--accent)_8%,transparent)]"
           : ""
       } ${className}`}
       style={{

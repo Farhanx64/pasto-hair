@@ -61,7 +61,7 @@ export default async function GalleryPage() {
           <header className="mb-14 max-w-2xl">
             <span className="eyebrow mb-4">The work</span>
             <h1
-              className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-[#ededed] mt-4 mb-4"
+              className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-foreground mt-4 mb-4"
               style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", lineHeight: 1.1 }}
             >
               GALLERY
@@ -82,13 +82,13 @@ export default async function GalleryPage() {
                 <div
                   className="w-14 h-14 rounded-xl flex items-center justify-center"
                   style={{
-                    background: "rgba(187,134,252,0.1)",
-                    border: "1px solid rgba(187,134,252,0.2)",
+                    background: "color-mix(in srgb, var(--accent) 10%, transparent)",
+                    border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
                   }}
                 >
-                  <Scissors size={26} color="#bb86fc" strokeWidth={1.5} />
+                  <Scissors className="text-accent" size={26} strokeWidth={1.5} />
                 </div>
-                <h2 className="font-[family-name:var(--font-oswald)] text-2xl font-semibold uppercase tracking-wide text-[#ededed]">
+                <h2 className="font-[family-name:var(--font-oswald)] text-2xl font-semibold uppercase tracking-wide text-foreground">
                   Being curated
                 </h2>
                 <p className="font-[family-name:var(--font-montserrat)] text-[#8a8f98] leading-relaxed">
@@ -101,7 +101,7 @@ export default async function GalleryPage() {
                 </p>
                 <Link
                   href="/booking"
-                  className="mt-1 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[rgba(187,134,252,0.5)] rounded-full"
+                  className="mt-1 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent/50 rounded-full"
                 >
                   <Button variant="secondary" size="md">
                     Book a Cut
@@ -128,7 +128,7 @@ export default async function GalleryPage() {
           <div className="mt-16 flex justify-center">
             <Link
               href="/booking"
-              className="focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[rgba(187,134,252,0.5)] rounded-full"
+              className="focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent/50 rounded-full"
             >
               <Button variant="primary" size="lg">
                 Book Your Cut
@@ -174,7 +174,7 @@ function GalleryTile({ item }: { item: GalleryItem & { image: Media } }) {
       {item.type === "before-after" && (
         <span
           className="absolute top-3 left-3 rounded-[3px] px-2 py-1 font-[family-name:var(--font-montserrat)] text-[10px] font-semibold uppercase tracking-[0.18em]"
-          style={{ background: "rgba(232,220,196,0.08)", color: "#e8dcc4" }}
+          style={{ background: "color-mix(in srgb, var(--champagne) 8%, transparent)", color: "var(--champagne)" }}
         >
           Before / After
         </span>
@@ -186,11 +186,11 @@ function GalleryTile({ item }: { item: GalleryItem & { image: Media } }) {
           className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-2 p-4 opacity-0 transition-opacity duration-300 group-hover:opacity-100 motion-reduce:transition-none"
           style={{
             background:
-              "linear-gradient(to top, rgba(10,10,12,0.92) 0%, rgba(10,10,12,0.55) 45%, transparent 100%)",
+              "linear-gradient(to top, color-mix(in srgb, var(--background) 92%, transparent) 0%, color-mix(in srgb, var(--background) 55%, transparent) 45%, transparent 100%)",
           }}
         >
           {item.caption && (
-            <p className="font-[family-name:var(--font-montserrat)] text-sm font-medium text-[#ededed]">
+            <p className="font-[family-name:var(--font-montserrat)] text-sm font-medium text-foreground">
               {item.caption}
             </p>
           )}

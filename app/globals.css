@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  /* --background, --foreground, --accent and --champagne are brand defaults the
+     admin can override (Settings → Theme colors, injected by ThemeStyle). Keep them
+     in sync with THEME_DEFAULTS in src/lib/theme.ts. */
   --background: #0a0a0c;
   --bg-deep: #050506;
   --bg-elevated: #0f0f12;
@@ -10,8 +13,8 @@
   --accent-strong: #6d5dfc;
   --champagne: #e8dcc4;
   --border-hairline: rgba(255, 255, 255, 0.08);
-  --border-accent: rgba(187, 134, 252, 0.25);
-  --ring: rgba(187, 134, 252, 0.5);
+  --border-accent: color-mix(in srgb, var(--accent) 25%, transparent);
+  --ring: color-mix(in srgb, var(--accent) 50%, transparent);
   --destructive: #f87171;
 }
 
@@ -54,8 +57,8 @@ body::after {
   left: 1rem;
   z-index: 9999;
   padding: 0.75rem 1.5rem;
-  background: #bb86fc;
-  color: #0a0a0c;
+  background: var(--accent);
+  color: var(--background);
   font-weight: 700;
   border-radius: 0 0 0.5rem 0.5rem;
   text-decoration: none;

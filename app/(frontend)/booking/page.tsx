@@ -330,15 +330,15 @@ function BookingPageInner() {
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center"
               style={{
-                background: "rgba(187,134,252,0.15)",
-                border: "1px solid rgba(187,134,252,0.3)",
-                boxShadow: "0 0 40px rgba(187,134,252,0.15)",
+                background: "color-mix(in srgb, var(--accent) 15%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--accent) 30%, transparent)",
+                boxShadow: "0 0 40px color-mix(in srgb, var(--accent) 15%, transparent)",
               }}
             >
-              <Check size={32} color="#bb86fc" />
+              <Check className="text-accent" size={32} />
             </div>
             <div>
-              <h1 className="font-[family-name:var(--font-oswald)] text-2xl font-bold uppercase tracking-widest text-[#ededed] mb-2">
+              <h1 className="font-[family-name:var(--font-oswald)] text-2xl font-bold uppercase tracking-widest text-foreground mb-2">
                 Booking Confirmed
               </h1>
               <p className="font-[family-name:var(--font-montserrat)] text-[#8a8f98] text-sm">
@@ -368,7 +368,7 @@ function BookingPageInner() {
           <div className="text-center mb-10">
             <p className="eyebrow mb-3">Reserve your chair</p>
             <h1
-              className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-[#ededed]"
+              className="font-[family-name:var(--font-oswald)] font-bold uppercase tracking-widest text-foreground"
               style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}
             >
               BOOK NOW
@@ -384,16 +384,16 @@ function BookingPageInner() {
                     aria-label={`Step ${i + 1}: ${label}${i < step ? " (completed)" : i === step ? " (current)" : ""}`}
                     aria-current={i === step ? "step" : undefined}
                     className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold font-[family-name:var(--font-montserrat)] transition-all duration-200 ${
-                      i <= step ? "text-[#0a0a0c]" : "text-[#8a8f98] bg-[rgba(255,255,255,0.06)]"
+                      i <= step ? "text-background" : "text-[#8a8f98] bg-[rgba(255,255,255,0.06)]"
                     }`}
                     style={
                       i === step
                         ? {
-                            background: "linear-gradient(135deg, #bb86fc, #6d5dfc)",
-                            boxShadow: "0 0 12px rgba(187,134,252,0.35)",
+                            background: "linear-gradient(135deg, var(--accent), #6d5dfc)",
+                            boxShadow: "0 0 12px color-mix(in srgb, var(--accent) 35%, transparent)",
                           }
                         : i < step
-                          ? { background: "linear-gradient(135deg, #bb86fc, #6d5dfc)" }
+                          ? { background: "linear-gradient(135deg, var(--accent), #6d5dfc)" }
                           : undefined
                     }
                   >
@@ -405,7 +405,7 @@ function BookingPageInner() {
                       style={{
                         background:
                           i < step
-                            ? "linear-gradient(90deg, #bb86fc, #6d5dfc)"
+                            ? "linear-gradient(90deg, var(--accent), #6d5dfc)"
                             : "rgba(255,255,255,0.1)",
                       }}
                     />
@@ -512,7 +512,7 @@ function BookingPageInner() {
                         min={todayISO()}
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
+                        className="w-full rounded-xl px-4 py-3.5 text-foreground font-[family-name:var(--font-montserrat)] text-base transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/50"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -529,7 +529,7 @@ function BookingPageInner() {
                           value={selectedTime}
                           onChange={(e) => setSelectedTime(e.target.value)}
                           disabled={!selectedDate || loadingSlots}
-                          className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)] disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
+                          className="w-full rounded-xl px-4 py-3.5 text-foreground font-[family-name:var(--font-montserrat)] text-base transition-all duration-150 cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent/50 disabled:opacity-50 disabled:cursor-not-allowed appearance-none"
                           style={{
                             background: "rgba(255,255,255,0.05)",
                             border: "1px solid rgba(255,255,255,0.1)",
@@ -586,7 +586,7 @@ function BookingPageInner() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="John Doe"
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
+                        className="w-full rounded-xl px-4 py-3.5 text-foreground font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent/50"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -604,7 +604,7 @@ function BookingPageInner() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="john@example.com"
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
+                        className="w-full rounded-xl px-4 py-3.5 text-foreground font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent/50"
                         aria-invalid={email.length > 0 && !isValidEmail(email)}
                         style={{
                           background: "rgba(255,255,255,0.05)",
@@ -628,7 +628,7 @@ function BookingPageInner() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+1 (555) 000-0000"
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)]"
+                        className="w-full rounded-xl px-4 py-3.5 text-foreground font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent/50"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -645,7 +645,7 @@ function BookingPageInner() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Any requests or special instructions..."
-                        className="w-full rounded-xl px-4 py-3.5 text-[#ededed] font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[rgba(187,134,252,0.5)] resize-none"
+                        className="w-full rounded-xl px-4 py-3.5 text-foreground font-[family-name:var(--font-montserrat)] text-base placeholder:text-[#8a8f98]/60 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
                         style={{
                           background: "rgba(255,255,255,0.05)",
                           border: "1px solid rgba(255,255,255,0.1)",
@@ -679,10 +679,10 @@ function BookingPageInner() {
                     {notes && <ConfirmRow label="Notes" value={notes} />}
                     {discountAmount > 0 && (
                       <div className="flex justify-between items-start gap-4">
-                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] flex-shrink-0">
+                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-accent flex-shrink-0">
                           Multi-service discount ({discountPercent}%)
                         </span>
-                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#bb86fc] text-right tabular-nums">
+                        <span className="font-[family-name:var(--font-montserrat)] text-sm text-accent text-right tabular-nums">
                           −{money(discountAmount)}
                         </span>
                       </div>
@@ -691,12 +691,12 @@ function BookingPageInner() {
                       className="pt-3 mt-1 border-t flex justify-between items-center"
                       style={{ borderColor: "rgba(255,255,255,0.08)" }}
                     >
-                      <span className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-[#ededed]">
+                      <span className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-foreground">
                         Total
                       </span>
                       <span
                         className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
-                        style={{ color: "#e8dcc4" }}
+                        style={{ color: "var(--champagne)" }}
                       >
                         {money(totalPrice)}
                         {isSurcharge && (
@@ -774,7 +774,7 @@ function BookingPageInner() {
             {/* ── Desktop sidebar: live summary ── */}
             <aside className="hidden lg:block">
               <GlassCard className="p-6 sticky top-24" hover={false}>
-                <h3 className="font-[family-name:var(--font-oswald)] text-base font-semibold uppercase tracking-widest text-[#ededed] mb-5">
+                <h3 className="font-[family-name:var(--font-oswald)] text-base font-semibold uppercase tracking-widest text-foreground mb-5">
                   Summary
                 </h3>
                 <div className="flex flex-col gap-3">
@@ -817,12 +817,12 @@ function BookingPageInner() {
                     className="pt-3 mt-1 border-t flex justify-between items-center"
                     style={{ borderColor: "rgba(255,255,255,0.08)" }}
                   >
-                    <span className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-[#ededed]">
+                    <span className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-foreground">
                       Total
                     </span>
                     <span
                       className="font-[family-name:var(--font-montserrat)] text-xl font-bold tabular-nums"
-                      style={{ color: "#e8dcc4" }}
+                      style={{ color: "var(--champagne)" }}
                     >
                       {money(totalPrice)}
                     </span>
@@ -838,7 +838,7 @@ function BookingPageInner() {
       <div
         className="lg:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pt-3"
         style={{
-          background: "rgba(10,10,12,0.95)",
+          background: "color-mix(in srgb, var(--background) 95%, transparent)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
           borderTop: "1px solid rgba(255,255,255,0.08)",
@@ -879,12 +879,12 @@ function BookingPageInner() {
           {/* Collapsed total row */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-[#ededed]">
+              <span className="font-[family-name:var(--font-montserrat)] text-sm font-semibold text-foreground">
                 Total
               </span>
               <span
                 className="font-[family-name:var(--font-montserrat)] text-lg font-bold tabular-nums"
-                style={{ color: "#e8dcc4" }}
+                style={{ color: "var(--champagne)" }}
               >
                 {money(totalPrice)}
               </span>
@@ -894,7 +894,7 @@ function BookingPageInner() {
               onClick={() => setReceiptExpanded((v) => !v)}
               aria-expanded={receiptExpanded}
               aria-label={receiptExpanded ? "Hide receipt details" : "Show receipt details"}
-              className="flex items-center justify-center w-9 h-9 rounded-full text-[#8a8f98] hover:text-[#ededed] transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[rgba(187,134,252,0.5)]"
+              className="flex items-center justify-center w-9 h-9 rounded-full text-[#8a8f98] hover:text-foreground transition-colors duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/50"
               style={{ background: "rgba(255,255,255,0.06)" }}
             >
               {receiptExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -921,8 +921,8 @@ function StepSection({
   return (
     <section className="mb-6">
       <div className="flex items-center gap-2 mb-5">
-        <Icon size={20} color="#bb86fc" />
-        <h2 className="font-[family-name:var(--font-oswald)] text-xl font-semibold uppercase tracking-wide text-[#ededed]">
+        <Icon className="text-accent" size={20} />
+        <h2 className="font-[family-name:var(--font-oswald)] text-xl font-semibold uppercase tracking-wide text-foreground">
           {title}
         </h2>
       </div>
@@ -944,20 +944,20 @@ function ServiceCard({
     <button
       type="button"
       onClick={onSelect}
-      className="text-left w-full rounded-2xl p-5 transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[rgba(187,134,252,0.5)]"
+      className="text-left w-full rounded-2xl p-5 transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent/50"
       style={{
-        background: selected ? "rgba(187,134,252,0.08)" : "rgba(255,255,255,0.04)",
+        background: selected ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "rgba(255,255,255,0.04)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         border: selected
-          ? "1px solid rgba(187,134,252,0.4)"
+          ? "1px solid color-mix(in srgb, var(--accent) 40%, transparent)"
           : "1px solid rgba(255,255,255,0.08)",
-        boxShadow: selected ? "0 0 16px rgba(187,134,252,0.12)" : "none",
+        boxShadow: selected ? "0 0 16px color-mix(in srgb, var(--accent) 12%, transparent)" : "none",
       }}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
-          <p className="font-[family-name:var(--font-oswald)] text-base font-semibold uppercase tracking-wide text-[#ededed]">
+          <p className="font-[family-name:var(--font-oswald)] text-base font-semibold uppercase tracking-wide text-foreground">
             {service.name}
           </p>
           {service.description && (
@@ -969,7 +969,7 @@ function ServiceCard({
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <span
             className="font-[family-name:var(--font-montserrat)] text-lg font-bold tabular-nums"
-            style={{ color: "#e8dcc4" }}
+            style={{ color: "var(--champagne)" }}
           >
             ${service.price}
           </span>
@@ -983,11 +983,11 @@ function ServiceCard({
         <div
           className="w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all duration-150"
           style={{
-            background: selected ? "linear-gradient(135deg, #bb86fc, #6d5dfc)" : "transparent",
-            borderColor: selected ? "#bb86fc" : "rgba(255,255,255,0.2)",
+            background: selected ? "linear-gradient(135deg, var(--accent), #6d5dfc)" : "transparent",
+            borderColor: selected ? "var(--accent)" : "rgba(255,255,255,0.2)",
           }}
         >
-          {selected && <Check size={12} color="#0a0a0c" strokeWidth={3} />}
+          {selected && <Check className="text-background" size={12} strokeWidth={3} />}
         </div>
       </div>
     </button>
@@ -1007,20 +1007,20 @@ function AddonCard({
     <button
       type="button"
       onClick={onToggle}
-      className="text-left w-full rounded-2xl p-5 transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[rgba(187,134,252,0.5)]"
+      className="text-left w-full rounded-2xl p-5 transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-accent/50"
       style={{
-        background: selected ? "rgba(187,134,252,0.08)" : "rgba(255,255,255,0.04)",
+        background: selected ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "rgba(255,255,255,0.04)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         border: selected
-          ? "1px solid rgba(187,134,252,0.4)"
+          ? "1px solid color-mix(in srgb, var(--accent) 40%, transparent)"
           : "1px solid rgba(255,255,255,0.08)",
-        boxShadow: selected ? "0 0 16px rgba(187,134,252,0.12)" : "none",
+        boxShadow: selected ? "0 0 16px color-mix(in srgb, var(--accent) 12%, transparent)" : "none",
       }}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1">
-          <p className="font-[family-name:var(--font-oswald)] text-base font-semibold uppercase tracking-wide text-[#ededed]">
+          <p className="font-[family-name:var(--font-oswald)] text-base font-semibold uppercase tracking-wide text-foreground">
             {addon.name}
           </p>
           {addon.description && (
@@ -1032,7 +1032,7 @@ function AddonCard({
         <div className="flex flex-col items-end gap-1 flex-shrink-0">
           <span
             className="font-[family-name:var(--font-montserrat)] text-lg font-bold tabular-nums"
-            style={{ color: "#e8dcc4" }}
+            style={{ color: "var(--champagne)" }}
           >
             +${addon.price}
           </span>
@@ -1046,12 +1046,12 @@ function AddonCard({
         <div
           className="w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-150"
           style={{
-            background: selected ? "linear-gradient(135deg, #bb86fc, #6d5dfc)" : "transparent",
-            borderColor: selected ? "#bb86fc" : "rgba(255,255,255,0.2)",
+            background: selected ? "linear-gradient(135deg, var(--accent), #6d5dfc)" : "transparent",
+            borderColor: selected ? "var(--accent)" : "rgba(255,255,255,0.2)",
             borderRadius: "4px",
           }}
         >
-          {selected && <Check size={12} color="#0a0a0c" strokeWidth={3} />}
+          {selected && <Check className="text-background" size={12} strokeWidth={3} />}
         </div>
       </div>
     </button>
@@ -1073,10 +1073,10 @@ function FormField({
     <div className="flex flex-col gap-1.5">
       <label
         htmlFor={htmlFor}
-        className="font-[family-name:var(--font-montserrat)] text-sm font-medium text-[#ededed]"
+        className="font-[family-name:var(--font-montserrat)] text-sm font-medium text-foreground"
       >
         {label}
-        {required && <span className="text-[#bb86fc] ml-0.5">*</span>}
+        {required && <span className="text-accent ml-0.5">*</span>}
       </label>
       {children}
     </div>
@@ -1089,7 +1089,7 @@ function ConfirmRow({ label, value }: { label: string; value: string }) {
       <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] flex-shrink-0">
         {label}
       </span>
-      <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed] text-right">
+      <span className="font-[family-name:var(--font-montserrat)] text-sm text-foreground text-right">
         {value}
       </span>
     </div>
@@ -1111,14 +1111,14 @@ function SummaryRow({
     <div className="flex justify-between items-center gap-2">
       <span
         className={`font-[family-name:var(--font-montserrat)] text-sm ${
-          muted ? "text-[#8a8f98]/60" : accent ? "text-[#bb86fc]" : "text-[#8a8f98]"
+          muted ? "text-[#8a8f98]/60" : accent ? "text-accent" : "text-[#8a8f98]"
         }`}
       >
         {label}
       </span>
       <span
         className={`font-[family-name:var(--font-montserrat)] text-sm font-semibold tabular-nums ${
-          muted ? "text-[#8a8f98]/60" : accent ? "text-[#bb86fc]" : "text-[#ededed]"
+          muted ? "text-[#8a8f98]/60" : accent ? "text-accent" : "text-foreground"
         }`}
       >
         {value}

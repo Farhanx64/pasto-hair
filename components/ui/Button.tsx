@@ -13,11 +13,11 @@ const baseStyles =
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    "text-[#0a0a0c] shadow-[0_0_20px_rgba(187,134,252,0.3)] hover:opacity-90 hover:-translate-y-px hover:shadow-[0_0_32px_rgba(187,134,252,0.45)] active:scale-[0.97] focus-visible:outline-[rgba(187,134,252,0.5)]",
+    "text-background shadow-[0_0_20px_color-mix(in_srgb,var(--accent)_30%,transparent)] hover:opacity-90 hover:-translate-y-px hover:shadow-[0_0_32px_color-mix(in_srgb,var(--accent)_45%,transparent)] active:scale-[0.97] focus-visible:outline-accent/50",
   secondary:
-    "bg-transparent border border-[rgba(255,255,255,0.15)] text-[#ededed] hover:border-[#bb86fc] hover:text-[#bb86fc] active:scale-[0.97] focus-visible:outline-[rgba(187,134,252,0.5)]",
+    "bg-transparent border border-[rgba(255,255,255,0.15)] text-foreground hover:border-accent hover:text-accent active:scale-[0.97] focus-visible:outline-accent/50",
   ghost:
-    "bg-transparent border-none text-[#ededed] hover:text-[#bb86fc] active:scale-[0.97] focus-visible:outline-[rgba(187,134,252,0.5)]",
+    "bg-transparent border-none text-foreground hover:text-accent active:scale-[0.97] focus-visible:outline-accent/50",
 };
 
 const sizeStyles: Record<Size, string> = {
@@ -37,7 +37,7 @@ export function Button({
   const gradientStyle =
     variant === "primary"
       ? {
-          background: "linear-gradient(135deg, #bb86fc, #6d5dfc)",
+          background: "linear-gradient(135deg, var(--accent), #6d5dfc)",
           ...style,
         }
       : style;
