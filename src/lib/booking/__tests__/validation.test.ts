@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isValidEmail } from "../validation";
+import { hasAcceptedTerms, isValidEmail } from "../validation";
 
 describe("isValidEmail", () => {
   it("accepts ordinary addresses", () => {
@@ -48,5 +48,24 @@ describe("isValidEmail", () => {
   it("rejects empty or whitespace-only input", () => {
     expect(isValidEmail("")).toBe(false);
     expect(isValidEmail("   ")).toBe(false);
+  });
+});
+
+describe("hasAcceptedTerms", () => {
+  it("accepts only a literal true", () => {
+    expect(hasAcceptedTerms(true)).toBe(true);
+  });
+
+  it("rejects false or a missing value", () => {
+    expect(hasAcceptedTerms(false)).toBe(false);
+    expect(hasAcceptedTerms(undefined)).toBe(false);
+    expect(hasAcceptedTerms(null)).toBe(false);
+  });
+
+  it("rejects truthy look-alikes", () => {
+    expect(hasAcceptedTerms("true")).toBe(false);
+    expect(hasAcceptedTerms("on")).toBe(false);
+    expect(hasAcceptedTerms(1)).toBe(false);
+    expect(hasAcceptedTerms({})).toBe(false);
   });
 });

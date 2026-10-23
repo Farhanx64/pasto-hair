@@ -34,6 +34,7 @@ export function Footer({ hideMobileCTA = false }: { hideMobileCTA?: boolean } = 
             <FooterLink href="/pricing">Pricing</FooterLink>
             <FooterLink href="/gallery">Gallery</FooterLink>
             <FooterLink href="/booking">Book Now</FooterLink>
+            <FooterLink href="/terms">Terms</FooterLink>
           </nav>
 
           {/* Social links */}

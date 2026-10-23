@@ -125,5 +125,15 @@ export const Bookings: CollectionConfig = {
       name: "calendarEventId",
       type: "text",
     },
+    {
+      name: "termsAcceptedAt",
+      type: "date",
+      admin: {
+        readOnly: true,
+        date: { pickerAppearance: "dayAndTime" },
+        description:
+          "When the customer ticked \"I agree to the Terms of Service\" on the booking form. Empty for bookings made before the checkbox existed.",
+      },
+    },
   ],
 };

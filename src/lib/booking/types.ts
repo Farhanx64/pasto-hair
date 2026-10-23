@@ -74,4 +74,5 @@ export interface BookingRequest {
   localDate: string;       // YYYY-MM-DD
   localStartTime: string;  // HH:MM
   submissionId: string;    // UUID from client
+  acceptedTerms: boolean;  // "I agree to the Terms of Service" checkbox
 }

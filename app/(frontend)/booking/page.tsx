@@ -135,6 +135,7 @@ function BookingPageInner() {
   const [email, setEmail] = React.useState(rebookEmail);
   const [phone, setPhone] = React.useState(rebookPhone);
   const [notes, setNotes] = React.useState("");
+  const [agreedToTerms, setAgreedToTerms] = React.useState(false);
 
   // Availability
   const [slots, setSlots] = React.useState<string[]>([]);
@@ -275,7 +276,7 @@ function BookingPageInner() {
 
   // ── Submit ──
   const handleSubmit = async () => {
-    if (!selectedServiceId || !selectedDate || !selectedTime) return;
+    if (!selectedServiceId || !selectedDate || !selectedTime || !agreedToTerms) return;
     setSubmitting(true);
     setSubmitError(null);
 
@@ -289,6 +290,7 @@ function BookingPageInner() {
       localDate: selectedDate,
       localStartTime: selectedTime,
       submissionId: crypto.randomUUID(),
+      acceptedTerms: agreedToTerms,
     };
 
     try {
@@ -708,6 +710,33 @@ function BookingPageInner() {
                     </div>
                   </div>
 
+                  {/* Terms consent — /api/book rejects the booking without it */}
+                  <label
+                    htmlFor="booking-terms"
+                    className="mb-5 flex items-start gap-3 cursor-pointer"
+                  >
+                    <input
+                      id="booking-terms"
+                      type="checkbox"
+                      required
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-0.5 h-5 w-5 flex-shrink-0 cursor-pointer rounded accent-[#bb86fc] focus:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(187,134,252,0.5)]"
+                    />
+                    <span className="font-[family-name:var(--font-montserrat)] text-sm text-[#ededed] leading-relaxed">
+                      I agree to the{" "}
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#bb86fc] underline underline-offset-2 hover:text-[#ededed] transition-colors duration-150"
+                      >
+                        Terms of Service
+                      </a>
+                      <span className="text-[#bb86fc] ml-0.5">*</span>
+                    </span>
+                  </label>
+
                   {submitError && (
                     <div
                       role="alert"
@@ -729,7 +758,7 @@ function BookingPageInner() {
                     variant="primary"
                     size="lg"
                     className="w-full"
-                    disabled={submitting}
+                    disabled={submitting || !agreedToTerms}
                     onClick={handleSubmit}
                   >
                     {submitting ? (
