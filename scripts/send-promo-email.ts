@@ -7,6 +7,10 @@
  *   scripts/promo-email.sh test  you@example.com CODE1 CODE2   # one copy, to you
  *   scripts/promo-email.sh send-all  CODE1 CODE2   # every past client
  *
+ * Sends from MARKETING_EMAIL_FROM — a separate subdomain (e.g. news.pasto.hair)
+ * verified in Resend — so spam complaints on promos can't drag down the
+ * booking emails' domain reputation. Only `test` may fall back to EMAIL_FROM.
+ *
  * Recipients are the distinct emails on bookings plus signed-up customers.
  * Each person gets their own email (never a shared To/CC list). Codes are read
  * from the admin and must be valid right now, so the email can't advertise a
@@ -76,8 +80,15 @@ if (mode === "count") {
 
 // --- send -------------------------------------------------------------------
 const apiKey = process.env.RESEND_API_KEY;
-const from = process.env.EMAIL_FROM;
-if (!apiKey || !from) fail("RESEND_API_KEY / EMAIL_FROM missing from .env.");
+if (!apiKey) fail("RESEND_API_KEY missing from .env.");
+const marketingFrom = process.env.MARKETING_EMAIL_FROM;
+if (!marketingFrom && mode !== "test") {
+  fail("MARKETING_EMAIL_FROM missing from .env — promos must not go out from the booking address.");
+}
+const from = marketingFrom || process.env.EMAIL_FROM;
+if (!from) fail("MARKETING_EMAIL_FROM (or EMAIL_FROM for a test) missing from .env.");
+if (!marketingFrom) console.log("Note: MARKETING_EMAIL_FROM not set — this test goes out from the booking address.");
+console.log(`From: ${from}`);
 const replyTo = process.env.OWNER_EMAIL || undefined; // "reply unsubscribe" reaches the owner
 
 const settings = await payload.findGlobal({ slug: "business-settings" });
