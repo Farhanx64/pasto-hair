@@ -1,4 +1,10 @@
-import type { ServiceSummary, AddonSummary, PriceSummary, EveningSurchargeTier } from "./types";
+import type {
+  ServiceSummary,
+  AddonSummary,
+  PriceSummary,
+  EveningSurchargeTier,
+  AppliedPromo,
+} from "./types";
 
 // Fallback when the booking-settings global has no tiers field at all (e.g. before
 // the migration has run). An empty array from the admin means "no evening surcharge".
@@ -74,12 +80,29 @@ function safePercent(value: number | undefined): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
 }
 
+const roundCents = (n: number) => Math.round(n * 100) / 100;
+
+// Dollars a promo takes off `servicesAmount` (the services subtotal after the
+// multi-service discount — never the evening surcharge). Capped so the services
+// portion can't go below $0. Shared with the booking form's live receipt.
+export function promoDiscountFor(servicesAmount: number, promo?: AppliedPromo | null): number {
+  if (!promo || !(servicesAmount > 0)) return 0;
+  const value = typeof promo.value === "number" && Number.isFinite(promo.value) && promo.value > 0
+    ? promo.value
+    : 0;
+  const raw = promo.type === "percent"
+    ? Math.round(servicesAmount * value) / 100 // same 2-decimal rounding as the multi-service discount
+    : roundCents(value);
+  return Math.min(raw, roundCents(servicesAmount));
+}
+
 export function calculatePrice(
   service: ServiceSummary,
   selectedAddons: AddonSummary[],
   startTimeHHMM: string, // e.g. "20:00"
   discount?: DiscountConfig, // omitted or {enabled:false} => no discount
-  eveningTiers: EveningSurchargeTier[] = DEFAULT_EVENING_SURCHARGE_TIERS
+  eveningTiers: EveningSurchargeTier[] = DEFAULT_EVENING_SURCHARGE_TIERS,
+  promo?: AppliedPromo | null // already validated; stacks after the multi-service discount
 ): PriceSummary {
   const basePrice = service.price;
   const addonsPrice = selectedAddons.reduce((sum, addon) => sum + addon.price, 0);
@@ -101,7 +124,12 @@ export function calculatePrice(
   const hasEveningSurcharge = eveningTier !== null;
   const eveningSurcharge = eveningTier?.amount ?? 0;
 
-  const total = basePrice + addonsPrice - discountAmount + eveningSurcharge;
+  // Promo applies to what's left of the services after the multi-service discount.
+  const promoDiscountAmount = promoDiscountFor(roundCents(subtotal - discountAmount), promo);
+
+  const total = roundCents(
+    basePrice + addonsPrice - discountAmount - promoDiscountAmount + eveningSurcharge
+  );
 
   return {
     basePrice,
@@ -113,5 +141,7 @@ export function calculatePrice(
     serviceCount,
     discountPercent,
     discountAmount,
+    promoCode: promo?.code ?? null,
+    promoDiscountAmount,
   };
 }

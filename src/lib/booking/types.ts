@@ -50,6 +50,17 @@ export interface PriceSummary {
   serviceCount: number;    // 1 + number of add-ons
   discountPercent: number; // 0, tier2, or tier3
   discountAmount: number;  // dollars, >= 0, 2dp
+  promoCode: string | null;     // normalized code that applied, or null
+  promoDiscountAmount: number;  // dollars, >= 0, 2dp
+}
+
+export type PromoType = "percent" | "fixed";
+
+// A promo code that has already been checked as valid right now.
+export interface AppliedPromo {
+  code: string;    // normalized (trimmed, upper-case)
+  type: PromoType; // percent off, or fixed dollars off
+  value: number;   // percent (e.g. 10) or dollars (e.g. 5)
 }
 
 export interface SlotGenerationInput {
@@ -74,4 +85,5 @@ export interface BookingRequest {
   localDate: string;       // YYYY-MM-DD
   localStartTime: string;  // HH:MM
   submissionId: string;    // UUID from client
+  promoCode?: string;      // optional; re-validated server-side
 }
