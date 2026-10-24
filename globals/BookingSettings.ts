@@ -1,5 +1,5 @@
 import type { GlobalConfig } from "payload";
-import { DEFAULT_EVENING_SURCHARGE_TIERS } from "../src/lib/booking/pricing";
+import { DEFAULT_EVENING_SURCHARGE_TIERS, DEFAULT_WEEKEND_SURCHARGE } from "../src/lib/booking/pricing";
 
 export const BookingSettings: GlobalConfig = {
   slug: "booking-settings",
@@ -44,6 +44,36 @@ export const BookingSettings: GlobalConfig = {
           },
         },
       ],
+    },
+    {
+      name: "weekendSurchargeDays",
+      label: "Weekend evening days",
+      type: "select",
+      hasMany: true,
+      defaultValue: [...DEFAULT_WEEKEND_SURCHARGE.days],
+      options: [
+        { label: "Monday", value: "mon" },
+        { label: "Tuesday", value: "tue" },
+        { label: "Wednesday", value: "wed" },
+        { label: "Thursday", value: "thu" },
+        { label: "Friday", value: "fri" },
+        { label: "Saturday", value: "sat" },
+        { label: "Sunday", value: "sun" },
+      ],
+      admin: {
+        description:
+          "On these days every evening surcharge tier is multiplied by the weekend multiplier below. Leave empty to charge weekends the same as weekdays.",
+      },
+    },
+    {
+      name: "weekendSurchargeMultiplier",
+      label: "Weekend evening multiplier",
+      type: "number",
+      defaultValue: DEFAULT_WEEKEND_SURCHARGE.multiplier,
+      min: 1,
+      admin: {
+        description: "2 = double (e.g. +$10 becomes +$20). 1 = no weekend increase.",
+      },
     },
     {
       name: "multiServiceDiscountEnabled",

@@ -20,9 +20,13 @@ import {
 import { Button } from "@/components/ui/Button";
 import {
   DEFAULT_EVENING_SURCHARGE_TIERS,
+  DEFAULT_WEEKEND_SURCHARGE,
   eveningTierFor,
+  eveningTiersForDate,
   normalizeEveningTiers,
+  normalizeWeekendSurcharge,
   promoDiscountFor,
+  type WeekendSurcharge,
 } from "@/src/lib/booking/pricing";
 import { describePromo } from "@/src/lib/booking/promo";
 import type { AppliedPromo, EveningSurchargeTier } from "@/src/lib/booking/types";
@@ -113,6 +117,8 @@ function BookingPageInner() {
   const [eveningTiers, setEveningTiers] = React.useState<EveningSurchargeTier[]>(
     DEFAULT_EVENING_SURCHARGE_TIERS,
   );
+  const [weekendSurcharge, setWeekendSurcharge] =
+    React.useState<WeekendSurcharge>(DEFAULT_WEEKEND_SURCHARGE);
   const [discountEnabled, setDiscountEnabled] = React.useState(DISCOUNT_ENABLED);
   const [tier2, setTier2] = React.useState(DISCOUNT_TIER2_PERCENT);
   const [tier3, setTier3] = React.useState(DISCOUNT_TIER3_PERCENT);
@@ -219,6 +225,9 @@ function BookingPageInner() {
         const res = await fetch("/api/globals/booking-settings");
         const data = await res.json();
         setEveningTiers(normalizeEveningTiers(data.eveningSurchargeTiers));
+        setWeekendSurcharge(
+          normalizeWeekendSurcharge(data.weekendSurchargeDays, data.weekendSurchargeMultiplier),
+        );
         if (typeof data.multiServiceDiscountEnabled === "boolean")
           setDiscountEnabled(data.multiServiceDiscountEnabled);
         if (typeof data.discountTier2Percent === "number") setTier2(data.discountTier2Percent);
@@ -267,8 +276,10 @@ function BookingPageInner() {
   const servicePrice = selectedService?.price ?? 0;
   const addonsPrice = selectedAddons.reduce((sum, a) => sum + a.price, 0);
 
+  // Evening tiers for the picked date (weekend days cost more).
+  const dayTiers = eveningTiersForDate(eveningTiers, selectedDate, weekendSurcharge);
   const eveningAmount = selectedTime
-    ? (eveningTierFor(eveningTiers, selectedTime)?.amount ?? 0)
+    ? (eveningTierFor(dayTiers, selectedTime)?.amount ?? 0)
     : 0;
   const isSurcharge = eveningAmount > 0;
 
@@ -628,7 +639,7 @@ function BookingPageInner() {
                             <>
                               <option value="">Select a time</option>
                               {slots.map((slot) => {
-                                const tier = eveningTierFor(eveningTiers, slot);
+                                const tier = eveningTierFor(dayTiers, slot);
                                 return (
                                   <option key={slot} value={slot}>
                                     {formatTime12(slot)}

@@ -6,7 +6,12 @@ import { getPayload } from "payload";
 import type { WeeklyAvailability, BookingRequest, AppliedPromo } from "@/src/lib/booking/types";
 import { generateSlots } from "@/src/lib/booking/slots";
 import { timeToMinutes, minutesToTime } from "@/src/lib/booking/slots";
-import { calculatePrice, normalizeEveningTiers } from "@/src/lib/booking/pricing";
+import {
+  calculatePrice,
+  eveningTiersForDate,
+  normalizeEveningTiers,
+  normalizeWeekendSurcharge,
+} from "@/src/lib/booking/pricing";
 import { getBusyBlocks, createCalendarEventFromLegacy, findEventBySubmissionId } from "@/src/lib/calendar/index";
 import { sendConfirmationEmail, sendOwnerNotification } from "@/src/lib/notifications/index";
 import { checkRateLimit, getClientIp } from "@/src/lib/booking/rate-limit";
@@ -282,7 +287,14 @@ export async function POST(request: Request) {
         tier2Percent: bookingSettings.discountTier2Percent ?? 10,
         tier3Percent: bookingSettings.discountTier3Percent ?? 15,
       },
-      normalizeEveningTiers(bookingSettings.eveningSurchargeTiers),
+      eveningTiersForDate(
+        normalizeEveningTiers(bookingSettings.eveningSurchargeTiers),
+        localDate,
+        normalizeWeekendSurcharge(
+          bookingSettings.weekendSurchargeDays,
+          bookingSettings.weekendSurchargeMultiplier,
+        ),
+      ),
       promo,
     );
 

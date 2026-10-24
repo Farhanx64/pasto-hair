@@ -9,7 +9,12 @@ import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getPayload } from "payload";
 import config from "@payload-config";
-import { describeEveningTiers, normalizeEveningTiers } from "@/src/lib/booking/pricing";
+import {
+  describeEveningTiers,
+  describeWeekendSurcharge,
+  normalizeEveningTiers,
+  normalizeWeekendSurcharge,
+} from "@/src/lib/booking/pricing";
 import type {
   Service,
   BookingSetting,
@@ -89,8 +94,14 @@ export default async function HomePage() {
   const { services, testimonials, galleryItems, bookingSettings } =
     await getHomeData();
 
-  const eveningRates = describeEveningTiers(
-    normalizeEveningTiers(bookingSettings?.eveningSurchargeTiers),
+  const eveningTiers = normalizeEveningTiers(bookingSettings?.eveningSurchargeTiers);
+  const eveningRates = describeEveningTiers(eveningTiers);
+  const weekendRates = describeWeekendSurcharge(
+    eveningTiers,
+    normalizeWeekendSurcharge(
+      bookingSettings?.weekendSurchargeDays,
+      bookingSettings?.weekendSurchargeMultiplier,
+    ),
   );
 
   const [featuredProp, ...secondaryProps] = valueProps;
@@ -263,6 +274,7 @@ export default async function HomePage() {
               </h2>
               <p className="font-[family-name:var(--font-montserrat)] text-sm text-[#8a8f98] mt-1">
                 {eveningRates ? `Evening rates: ${eveningRates}.` : null}
+                {weekendRates ? ` ${weekendRates}.` : null}
               </p>
             </div>
             <Link

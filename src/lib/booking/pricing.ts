@@ -13,6 +13,8 @@ export const DEFAULT_EVENING_SURCHARGE_TIERS: EveningSurchargeTier[] = [
   { start: "21:00", amount: 20 },
 ];
 
+const roundCents = (n: number) => Math.round(n * 100) / 100;
+
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function hhmmToMinutes(time: string): number {
@@ -54,6 +56,75 @@ export function eveningTierFor(
   return match;
 }
 
+export const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+export type Weekday = (typeof WEEKDAYS)[number];
+// Mon-first, for reading back to customers ("Fri, Sat & Sun").
+const WEEK_ORDER: Weekday[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+export interface WeekendSurcharge {
+  days: Weekday[];
+  multiplier: number; // 2 => every evening tier costs double on these days
+}
+
+// Fallback when the booking-settings global has no weekend fields (before the migration).
+export const DEFAULT_WEEKEND_SURCHARGE: WeekendSurcharge = {
+  days: ["fri", "sat", "sun"],
+  multiplier: 2,
+};
+
+// Sanitize the admin's weekend settings. Missing fields => defaults; no days
+// or a multiplier of 1 => weekends cost the same as weekdays.
+export function normalizeWeekendSurcharge(
+  days: readonly (string | null | undefined)[] | null | undefined,
+  multiplier: number | null | undefined
+): WeekendSurcharge {
+  return {
+    days: Array.isArray(days)
+      ? WEEK_ORDER.filter((d) => days.includes(d))
+      : DEFAULT_WEEKEND_SURCHARGE.days,
+    multiplier:
+      typeof multiplier === "number" && Number.isFinite(multiplier) && multiplier >= 1
+        ? multiplier
+        : DEFAULT_WEEKEND_SURCHARGE.multiplier,
+  };
+}
+
+/** "2026-10-24" -> "sat". The date is already the shop's local calendar date. */
+export function weekdayOf(dateYYYYMMDD: string): Weekday | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateYYYYMMDD);
+  if (!m) return null;
+  return WEEKDAYS[new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).getUTCDay()];
+}
+
+// The evening tiers that apply on a given date: on weekend days every tier's
+// amount is multiplied (20:00/$10 + 21:00/$20 => $20 / $40 at 2x).
+export function eveningTiersForDate(
+  tiers: EveningSurchargeTier[],
+  dateYYYYMMDD: string,
+  weekend: WeekendSurcharge = DEFAULT_WEEKEND_SURCHARGE
+): EveningSurchargeTier[] {
+  const day = weekdayOf(dateYYYYMMDD);
+  if (!day || !weekend.days.includes(day) || weekend.multiplier === 1) return tiers;
+  return tiers.map((t) => ({ start: t.start, amount: roundCents(t.amount * weekend.multiplier) }));
+}
+
+const DAY_LABELS: Record<Weekday, string> = {
+  sun: "Sun", mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat",
+};
+
+/** "Fri, Sat & Sun: +$20 from 8:00 PM, +$40 from 9:00 PM" ("" when there's no weekend rate) */
+export function describeWeekendSurcharge(
+  tiers: EveningSurchargeTier[],
+  weekend: WeekendSurcharge
+): string {
+  const normalized = normalizeEveningTiers(tiers);
+  if (weekend.days.length === 0 || weekend.multiplier === 1 || normalized.length === 0) return "";
+  const labels = weekend.days.map((d) => DAY_LABELS[d]);
+  const days = labels.length > 1 ? `${labels.slice(0, -1).join(", ")} & ${labels.at(-1)}` : labels[0];
+  const boosted = normalized.map((t) => ({ start: t.start, amount: roundCents(t.amount * weekend.multiplier) }));
+  return `${days}: ${describeEveningTiers(boosted)}`;
+}
+
 /** "20:00" -> "8:00 PM" */
 export function formatTime12(time: string): string {
   const [h, m] = time.split(":").map(Number);
@@ -79,8 +150,6 @@ export interface DiscountConfig {
 function safePercent(value: number | undefined): number {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 0;
 }
-
-const roundCents = (n: number) => Math.round(n * 100) / 100;
 
 // Dollars a promo takes off `servicesAmount` (the services subtotal after the
 // multi-service discount — never the evening surcharge). Capped so the services

@@ -7,6 +7,7 @@ import * as migration_20261023_034626_theme_colors from './20261023_034626_theme
 import * as migration_20261023_034645_terms_of_service from './20261023_034645_terms_of_service';
 import * as migration_20261023_034755_promo_codes from './20261023_034755_promo_codes';
 import * as migration_20261023_034826_customer_accounts from './20261023_034826_customer_accounts';
+import * as migration_20261024_084831_weekend_surcharge_and_optouts from './20261024_084831_weekend_surcharge_and_optouts';
 
 export const migrations = [
   {
@@ -52,6 +53,11 @@ export const migrations = [
   {
     up: migration_20261023_034826_customer_accounts.up,
     down: migration_20261023_034826_customer_accounts.down,
-    name: '20261023_034826_customer_accounts'
+    name: '20261023_034826_customer_accounts',
+  },
+  {
+    up: migration_20261024_084831_weekend_surcharge_and_optouts.up,
+    down: migration_20261024_084831_weekend_surcharge_and_optouts.down,
+    name: '20261024_084831_weekend_surcharge_and_optouts'
   },
 ];

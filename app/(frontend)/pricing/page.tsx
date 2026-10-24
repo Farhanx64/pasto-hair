@@ -9,7 +9,12 @@ import { Footer } from "@/components/layout/Footer";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getPayload } from "payload";
 import config from "@payload-config";
-import { describeEveningTiers, normalizeEveningTiers } from "@/src/lib/booking/pricing";
+import {
+  describeEveningTiers,
+  describeWeekendSurcharge,
+  normalizeEveningTiers,
+  normalizeWeekendSurcharge,
+} from "@/src/lib/booking/pricing";
 import type { Service, Addon, BookingSetting } from "@/payload-types";
 
 export const dynamic = "force-dynamic";
@@ -54,8 +59,14 @@ async function getPricingData() {
 export default async function PricingPage() {
   const { services, addons, bookingSettings } = await getPricingData();
 
-  const eveningRates = describeEveningTiers(
-    normalizeEveningTiers(bookingSettings?.eveningSurchargeTiers),
+  const eveningTiers = normalizeEveningTiers(bookingSettings?.eveningSurchargeTiers);
+  const eveningRates = describeEveningTiers(eveningTiers);
+  const weekendRates = describeWeekendSurcharge(
+    eveningTiers,
+    normalizeWeekendSurcharge(
+      bookingSettings?.weekendSurchargeDays,
+      bookingSettings?.weekendSurchargeMultiplier,
+    ),
   );
 
   const s =
@@ -128,6 +139,7 @@ export default async function PricingPage() {
                   <p className="font-[family-name:var(--font-montserrat)] text-sm text-foreground/80 leading-relaxed">
                     <span className="font-semibold text-accent">Evening rates:</span>{" "}
                     {eveningRates}, based on your start time.
+                    {weekendRates && ` ${weekendRates}.`}
                   </p>
                 </GlassCard>
               )}

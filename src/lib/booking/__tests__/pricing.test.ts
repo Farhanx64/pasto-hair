@@ -2,9 +2,15 @@ import { describe, it, expect } from "vitest";
 import {
   calculatePrice,
   describeEveningTiers,
+  describeWeekendSurcharge,
   eveningTierFor,
+  eveningTiersForDate,
   normalizeEveningTiers,
+  normalizeWeekendSurcharge,
   promoDiscountFor,
+  weekdayOf,
+  DEFAULT_EVENING_SURCHARGE_TIERS,
+  DEFAULT_WEEKEND_SURCHARGE,
 } from "../pricing";
 import type { ServiceSummary, AddonSummary } from "../types";
 
@@ -329,5 +335,64 @@ describe("promo code", () => {
     expect(promoDiscountFor(0, fixed5)).toBe(0);
     expect(promoDiscountFor(50, { ...fixed5, value: -5 })).toBe(0);
     expect(promoDiscountFor(50, { ...fixed5, value: NaN })).toBe(0);
+  });
+});
+
+describe("weekend evening surcharge", () => {
+  const tiers = DEFAULT_EVENING_SURCHARGE_TIERS; // 20:00/$10, 21:00/$20
+
+  it("reads the weekday from a calendar date", () => {
+    expect(weekdayOf("2026-10-23")).toBe("fri");
+    expect(weekdayOf("2026-10-25")).toBe("sun");
+    expect(weekdayOf("2026-10-26")).toBe("mon");
+    expect(weekdayOf("nope")).toBeNull();
+  });
+
+  it("doubles every tier on Fri, Sat and Sun by default", () => {
+    for (const date of ["2026-10-23", "2026-10-24", "2026-10-25"]) {
+      const dayTiers = eveningTiersForDate(tiers, date);
+      expect(calculatePrice(baseService, [], "20:30", undefined, dayTiers).eveningSurcharge).toBe(20);
+      expect(calculatePrice(baseService, [], "21:00", undefined, dayTiers).eveningSurcharge).toBe(40);
+      expect(calculatePrice(baseService, [], "19:45", undefined, dayTiers).eveningSurcharge).toBe(0);
+    }
+  });
+
+  it("leaves Mon–Thu at the normal rate", () => {
+    for (const date of ["2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29"]) {
+      const dayTiers = eveningTiersForDate(tiers, date);
+      expect(eveningTierFor(dayTiers, "20:00")?.amount).toBe(10);
+      expect(eveningTierFor(dayTiers, "21:00")?.amount).toBe(20);
+    }
+  });
+
+  it("follows the admin's days and multiplier", () => {
+    const sat15 = normalizeWeekendSurcharge(["sat"], 1.5);
+    expect(eveningTierFor(eveningTiersForDate(tiers, "2026-10-24", sat15), "21:00")?.amount).toBe(30);
+    expect(eveningTierFor(eveningTiersForDate(tiers, "2026-10-23", sat15), "21:00")?.amount).toBe(20);
+  });
+
+  it("normalizes admin values", () => {
+    expect(normalizeWeekendSurcharge(undefined, undefined)).toEqual(DEFAULT_WEEKEND_SURCHARGE);
+    expect(normalizeWeekendSurcharge([], 2).days).toEqual([]); // emptied in admin => off
+    expect(normalizeWeekendSurcharge(["sun", "bogus", "fri"], 0.5)).toEqual({ days: ["fri", "sun"], multiplier: 2 });
+  });
+
+  it("is off with no days or a 1x multiplier", () => {
+    expect(eveningTiersForDate(tiers, "2026-10-24", { days: [], multiplier: 2 })).toBe(tiers);
+    expect(eveningTiersForDate(tiers, "2026-10-24", { days: ["sat"], multiplier: 1 })).toBe(tiers);
+    expect(describeWeekendSurcharge(tiers, { days: [], multiplier: 2 })).toBe("");
+  });
+
+  it("describes the weekend rate", () => {
+    expect(describeWeekendSurcharge(tiers, DEFAULT_WEEKEND_SURCHARGE)).toBe(
+      "Fri, Sat & Sun: +$20 from 8:00 PM, +$40 from 9:00 PM"
+    );
+  });
+
+  it("never discounts the doubled surcharge with a promo", () => {
+    const dayTiers = eveningTiersForDate(tiers, "2026-10-24");
+    const r = calculatePrice(baseService, [], "21:00", undefined, dayTiers, { code: "X", type: "percent", value: 15 });
+    expect(r.eveningSurcharge).toBe(40);
+    expect(r.total).toBe(baseService.price - r.promoDiscountAmount + 40);
   });
 });
