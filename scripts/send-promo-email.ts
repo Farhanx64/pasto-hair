@@ -59,7 +59,13 @@ for (const code of codeArgs) {
   });
   const check = checkPromoCode(found.docs[0], new Date());
   if (!check.valid) fail(`${code}: ${check.message} Fix it in the admin first.`);
-  codes.push({ code: check.promo.code, label: describePromo(check.promo) });
+  const maxUses = found.docs[0]?.maxUses;
+  codes.push({
+    code: check.promo.code,
+    label: describePromo(check.promo),
+    // Uses the cap from the admin, so the email always matches what checkout enforces.
+    limit: maxUses ? `First ${maxUses} booking${maxUses === 1 ? "" : "s"} only` : undefined,
+  });
 }
 
 // --- recipients -------------------------------------------------------------

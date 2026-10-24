@@ -784,6 +784,7 @@ export function buildSignInText(url: string): string {
 export interface PromoAnnouncementCode {
   code: string;
   label: string; // "10% off" / "$5 off"
+  limit?: string; // "First 10 bookings only" — shown under the label
 }
 
 // Promotional, not transactional: the footer says why they got it and how to
@@ -796,7 +797,7 @@ export function buildPromoAnnouncementHtml(codes: PromoAnnouncementCode[], busin
     .map(
       (c) => `                <tr>
                   <td style="padding:14px 18px;border-top:1px solid ${C.border};font-family:${FONT_HEAD};font-size:18px;line-height:24px;color:${C.champagne};font-weight:600;letter-spacing:0.06em;word-break:break-all;overflow-wrap:anywhere;">${esc(c.code)}</td>
-                  <td align="right" style="padding:14px 18px;border-top:1px solid ${C.border};font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.accent};font-weight:700;white-space:nowrap;vertical-align:middle;">${esc(c.label)}</td>
+                  <td align="right" style="padding:14px 18px;border-top:1px solid ${C.border};font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.accent};font-weight:700;white-space:nowrap;vertical-align:middle;">${esc(c.label)}${c.limit ? `<br><span style="font-size:11px;line-height:16px;color:${C.muted};font-weight:400;white-space:normal;">${esc(c.limit)}</span>` : ""}</td>
                 </tr>`,
     )
     .join("\n");
@@ -866,7 +867,7 @@ export function buildPromoAnnouncementText(codes: PromoAnnouncementCode[], busin
     "",
     "The calendar is getting packed. Lock in your next cut before the good times are gone, and take one of these codes with you:",
     "",
-    ...codes.map((c) => `  ${c.code} — ${c.label}`),
+    ...codes.map((c) => `  ${c.code} — ${c.label}${c.limit ? ` (${c.limit.toLowerCase()})` : ""}`),
     "",
     "Enter a code on the last step of booking. One code per booking; it comes off your services, not the evening rate.",
     "",
