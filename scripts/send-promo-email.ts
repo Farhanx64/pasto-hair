@@ -24,6 +24,7 @@ import { getPayload } from "payload";
 import { Resend } from "resend";
 
 import config from "../payload.config";
+import { firstNameOf } from "../src/lib/marketing/names";
 import { unsubscribeOneClickUrl, unsubscribePageUrl } from "../src/lib/marketing/unsubscribe";
 import { checkPromoCode, describePromo, normalizePromoCode } from "../src/lib/booking/promo";
 import {
@@ -73,18 +74,34 @@ for (const code of codeArgs) {
 }
 
 // --- recipients -------------------------------------------------------------
+// Also remembers a first name per email for "Hi Pasto!": the account name wins,
+// else the name on their most recent booking.
 const emails = new Set<string>();
-const bookings = await payload.find({ collection: "bookings", limit: 0, pagination: false, depth: 0 });
-for (const b of bookings.docs) if (b.customerEmail) emails.add(b.customerEmail.trim().toLowerCase());
+const names = new Map<string, string>();
+const bookings = await payload.find({ collection: "bookings", limit: 0, pagination: false, depth: 0, sort: "createdAt" });
+for (const b of bookings.docs) {
+  if (!b.customerEmail) continue;
+  const email = b.customerEmail.trim().toLowerCase();
+  emails.add(email);
+  const name = firstNameOf(b.customerName);
+  if (name) names.set(email, name); // ascending, so the latest booking wins
+}
 const customers = await payload.find({ collection: "customers", limit: 0, pagination: false, depth: 0 });
-for (const c of customers.docs) if (c.email) emails.add(c.email.trim().toLowerCase());
+for (const c of customers.docs) {
+  if (!c.email) continue;
+  const email = c.email.trim().toLowerCase();
+  emails.add(email);
+  const name = firstNameOf(c.name);
+  if (name) names.set(email, name);
+}
 const optOuts = await payload.find({ collection: "email-opt-outs", limit: 0, pagination: false, depth: 0 });
 const unsubscribed = new Set(optOuts.docs.map((o) => o.email.trim().toLowerCase()));
 const valid = [...emails].filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
 const recipients = valid.filter((e) => !unsubscribed.has(e)).sort();
 
 console.log(`\nCodes: ${codes.map((c) => `${c.code} (${c.label})`).join(", ")}`);
-console.log(`Past clients: ${recipients.length}${valid.length > recipients.length ? ` (${valid.length - recipients.length} unsubscribed, skipped)` : ""}`);
+console.log(`Past clients: ${recipients.length} (${recipients.filter((e) => names.has(e)).length} greeted by name)`);
+if (valid.length > recipients.length) console.log(`Skipped ${valid.length - recipients.length} unsubscribed.`);
 
 if (mode === "count") {
   console.log("\nNothing sent (count mode).\n");
@@ -117,14 +134,17 @@ const targets = mode === "test" ? [testTo!] : recipients;
 let sent = 0;
 const failed: string[] = [];
 for (const to of targets) {
-  const unsubscribeUrl = unsubscribePageUrl(to);
+  // A test goes to the owner, greeted with the first client's name so the
+  // personal line can be checked.
+  const firstName = mode === "test" ? (names.get(to) ?? names.get(recipients[0]) ?? null) : (names.get(to) ?? null);
+  const recipient = { firstName, unsubscribeUrl: unsubscribePageUrl(to) };
   const { error } = await resend.emails.send({
     from,
     to,
     replyTo,
     subject: mode === "test" ? `[TEST] ${SUBJECT}` : SUBJECT,
-    html: buildPromoAnnouncementHtml(codes, business, unsubscribeUrl),
-    text: buildPromoAnnouncementText(codes, business, unsubscribeUrl),
+    html: buildPromoAnnouncementHtml(codes, business, recipient),
+    text: buildPromoAnnouncementText(codes, business, recipient),
     headers: {
       "List-Unsubscribe": `<${unsubscribeOneClickUrl(to)}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

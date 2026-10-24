@@ -796,11 +796,22 @@ function promoFooter(unsubscribeUrl?: string): string {
   return `You&rsquo;re getting this because you&rsquo;ve booked with Pasto Hair. Don&rsquo;t want offers like this? ${optOut}`;
 }
 
+export interface PromoRecipient {
+  firstName?: string | null; // "Hi Pasto!" — falls back to "Hi there!"
+  unsubscribeUrl?: string;
+}
+
+/** "Hi Pasto!" / "Hi there!" */
+export function promoGreeting(firstName?: string | null): string {
+  return `Hi ${firstName?.trim() || "there"}!`;
+}
+
 export function buildPromoAnnouncementHtml(
   codes: PromoAnnouncementCode[],
   business?: BusinessInfo,
-  unsubscribeUrl?: string,
+  recipient: PromoRecipient = {},
 ): string {
+  const { unsubscribeUrl } = recipient;
   const codeRows = codes
     .map(
       (c) => `                <tr>
@@ -821,7 +832,8 @@ export function buildPromoAnnouncementHtml(
           <tr>
             <td align="center" class="px" style="padding:14px 40px 0;">
               <div class="hero" style="font-family:${FONT_HEAD};font-size:34px;line-height:40px;color:${C.champagne};font-weight:600;letter-spacing:0.02em;mso-line-height-rule:exactly;">Slots are filling up</div>
-              <div style="padding-top:12px;font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.muted};">
+              <div style="padding-top:16px;font-family:${FONT_BODY};font-size:16px;line-height:24px;color:${C.fg};font-weight:600;">${esc(promoGreeting(recipient.firstName))}</div>
+              <div style="padding-top:6px;font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.muted};">
                 The calendar is getting packed. Lock in your next cut before the good times are gone &mdash; and take one of these codes with you.
               </div>
             </td>
@@ -863,7 +875,7 @@ ${businessRows(business)}
 
   return layout({
     title: "Slots are filling up — Pasto Hair",
-    preheader: `Book before the calendar fills — ${codes.map((c) => `${c.code} for ${c.label}`).join(", ")}.`,
+    preheader: `${promoGreeting(recipient.firstName)} Book before the calendar fills — ${codes.map((c) => `${c.code} for ${c.label}`).join(", ")}.`,
     body,
     footerNote: promoFooter(unsubscribeUrl),
   });
@@ -872,10 +884,13 @@ ${businessRows(business)}
 export function buildPromoAnnouncementText(
   codes: PromoAnnouncementCode[],
   business?: BusinessInfo,
-  unsubscribeUrl?: string,
+  recipient: PromoRecipient = {},
 ): string {
+  const { unsubscribeUrl } = recipient;
   return [
     "SLOTS ARE FILLING UP — PASTO HAIR",
+    "",
+    promoGreeting(recipient.firstName),
     "",
     "The calendar is getting packed. Lock in your next cut before the good times are gone, and take one of these codes with you:",
     "",
