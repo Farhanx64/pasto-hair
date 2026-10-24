@@ -28,7 +28,6 @@ import { firstNameOf } from "../src/lib/marketing/names";
 import { unsubscribeOneClickUrl, unsubscribePageUrl } from "../src/lib/marketing/unsubscribe";
 import { checkPromoCode, describePromo, normalizePromoCode } from "../src/lib/booking/promo";
 import {
-  buildGmailSwatchHtml,
   buildPromoAnnouncementHtml,
   buildPromoAnnouncementText,
   type PromoAnnouncementCode,
@@ -44,23 +43,6 @@ function fail(message: string): never {
 }
 
 const [mode, ...rest] = process.argv.slice(2);
-
-// Temporary: `swatch you@example.com` sends the Gmail dark-mode color test.
-if (mode === "swatch") {
-  const to = rest[0];
-  if (!to?.includes("@")) fail("swatch needs an email address.");
-  const from = process.env.MARKETING_EMAIL_FROM || process.env.EMAIL_FROM;
-  if (!process.env.RESEND_API_KEY || !from) fail("RESEND_API_KEY / MARKETING_EMAIL_FROM missing from .env.");
-  const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
-    from,
-    to,
-    subject: "[TEST] Gmail dark mode colors",
-    html: buildGmailSwatchHtml(),
-  });
-  if (error) fail(`Swatch failed: ${error.message}`);
-  console.log(`\nSwatch sent to ${to}.\n`);
-  process.exit(0);
-}
 if (mode !== "count" && mode !== "test" && mode !== "send-all") {
   fail("Usage: promo-email.sh count|send-all CODE... | test you@example.com CODE...");
 }

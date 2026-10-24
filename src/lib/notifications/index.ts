@@ -182,17 +182,19 @@ function durationLabel(startTime: string, endTime: string): string {
  * `preheader` is the grey preview line clients show next to the subject —
  * without it they scrape the first visible text, which reads like debris.
  */
-// Gmail's iPhone app ignores color-scheme and flips every color in dark mode,
-// so this dark email turns bright. Its fix (hteumeuleu.com, "Fixing Gmail's
-// dark mode issues with CSS Blend Modes"): Gmail never flips background
-// *images*, so the canvas gets a one-color gradient; then two blend layers
-// (screen, then difference) flip everything inside back. The \`u + .body\`
-// selector only matches inside Gmail, so every other app ignores it.
-// Images aren't flipped by Gmail but *are* flipped back by the blend layers, so
-// with the fix on, the logo sits in its own card top above the blend layers,
-// painted with a gradient so Gmail leaves it alone.
-// The email's body must then not include headerRow() itself.
-// Opt-in per email until it has been checked on a phone.
+// Gmail's iPhone app ignores color-scheme and, in dark mode, flips the
+// lightness of every color (hue kept), so this dark email turned bright.
+// Fix, checked on a phone with a color-swatch test email (2026-10-24):
+// - Gmail never touches background *images*, so every background is painted
+//   with a one-color gradient as well (grad()).
+// - White/gray text is wrapped in gmailBlend(): two blend layers (screen,
+//   then difference) that flip it back (hteumeuleu.com, "Fixing Gmail's dark
+//   mode issues with CSS Blend Modes"). They'd turn colored text into its
+//   opposite hue (purple -> green), so colored text is NOT wrapped and uses
+//   mid-lightness shades (GM) that look about the same flipped or not.
+// - Images aren't wrapped (the layers would invert them).
+// The \`u + .body\` selector only matches inside Gmail; other apps ignore it.
+// Opt-in per email (gmailDarkFix) — the body must build itself that way.
 const GMAIL_DARK_CSS = `
     u + .body .gmail-blend-screen { background:#000; mix-blend-mode:screen; }
     u + .body .gmail-blend-difference { background:#000; mix-blend-mode:difference; }`;
@@ -202,13 +204,10 @@ function layout(opts: {
   preheader: string;
   body: string;
   footerNote?: string;
-  // "per-element": gradients everywhere, but the body wraps its own text in
-  // gmailBlend() — for the color calibration email.
-  gmailDarkFix?: boolean | "per-element";
+  gmailDarkFix?: boolean;
 }): string {
-  const perElement = opts.gmailDarkFix === "per-element";
   const fix = opts.gmailDarkFix === true;
-  const canvasBg = fix || perElement
+  const canvasBg = fix
     ? `background-color:${C.bgDeep};background-image:linear-gradient(${C.bgDeep},${C.bgDeep});`
     : `background-color:${C.bgDeep};`;
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -233,7 +232,7 @@ function layout(opts: {
       .px { padding-left:24px !important; padding-right:24px !important; }
       .hero { font-size:30px !important; line-height:36px !important; }
       .stack { display:block !important; width:100% !important; text-align:left !important; }
-    }${fix || perElement ? GMAIL_DARK_CSS : ""}
+    }${fix ? GMAIL_DARK_CSS : ""}
   </style>
 </head>
 <body class="body" style="margin:0;padding:0;${canvasBg}">
@@ -243,25 +242,23 @@ function layout(opts: {
 
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.bgDeep}" style="${canvasBg}">
     <tr>
-      <td align="center" style="padding:32px 12px;${fix || perElement ? canvasBg : ""}">
-${fix ? gmailSafeCardTop() : ""}
-        <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" width="600" style="margin:0 auto;width:600px;max-width:600px;${perElement ? grad(C.bg) : `background-color:${C.bg};`}border:1px solid ${C.border};${fix ? "border-top:0;border-radius:0 0 14px 14px;" : "border-radius:14px;"}overflow:hidden;">
+      <td align="center" style="padding:32px 12px;${fix ? canvasBg : ""}">
+        <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" width="600" style="margin:0 auto;width:600px;max-width:600px;${fix ? grad(C.bg) : `background-color:${C.bg};`}border:1px solid ${C.border};border-radius:14px;overflow:hidden;">
 ${opts.body}
         </table>
 
         <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" width="600" style="margin:0 auto;width:600px;max-width:600px;">
           <tr>
             <td align="center" style="padding:24px 24px 8px;font-family:${FONT_BODY};font-size:11px;line-height:18px;color:${C.muted};letter-spacing:0.04em;">
-              Made w Joy &nbsp;·&nbsp; pasto.hair &nbsp;·&nbsp; by Farhan
+              ${blendIf(fix, "Made w Joy &nbsp;·&nbsp; pasto.hair &nbsp;·&nbsp; by Farhan")}
             </td>
           </tr>
           <tr>
             <td align="center" style="padding:0 24px 24px;font-family:${FONT_BODY};font-size:11px;line-height:18px;color:#5a5f68;">
-              ${opts.footerNote ?? "Automated message — please don&rsquo;t reply to this address."}
+              ${blendIf(fix, opts.footerNote ?? "Automated message — please don&rsquo;t reply to this address.")}
             </td>
           </tr>
         </table>
-${fix ? `        </div></div>\n` : ""}
       </td>
     </tr>
   </table>
@@ -277,14 +274,11 @@ function gmailBlend(html: string): string {
   return `<div class="gmail-blend-screen"><div class="gmail-blend-difference">${html}</div></div>`;
 }
 
-/** Logo card top for the Gmail dark fix — then opens the blend layers. */
-function gmailSafeCardTop(): string {
-  return `        <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" width="600" style="margin:0 auto;width:600px;max-width:600px;${grad(C.bg)}border-radius:14px 14px 0 0;">
-${headerRow()}
-        </table>
-        <div class="gmail-blend-screen"><div class="gmail-blend-difference">
-`;
-}
+const blendIf = (on: boolean, html: string) => (on ? gmailBlend(html) : html);
+
+// Colored text for gmailDarkFix emails: mid-lightness, so Gmail's flip barely
+// changes them (picked from a swatch test on a phone).
+const GM = { accent: "#9d6bf7", champagne: "#b89a66" };
 
 function headerRow(): string {
   return `          <tr>
@@ -295,9 +289,10 @@ function headerRow(): string {
 }
 
 /** Hairline rule. A 1px table row is the only divider every client renders. */
-function rule(): string {
+function rule(gmailDarkFix = false): string {
+  const bg = gmailDarkFix ? grad(C.border) : `background-color:${C.border};`;
   return `              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr><td height="1" bgcolor="${C.border}" style="height:1px;line-height:1px;font-size:0;background-color:${C.border};">&nbsp;</td></tr>
+                <tr><td height="1" bgcolor="${C.border}" style="height:1px;line-height:1px;font-size:0;${bg}">&nbsp;</td></tr>
               </table>`;
 }
 
@@ -322,7 +317,9 @@ function promoLabel(code?: string, amount?: number): string {
 }
 
 /** Address / phone block, rendered only when BusinessSettings supplies them. */
-function businessRows(b?: BusinessInfo): string {
+function businessRows(b?: BusinessInfo, gmailDarkFix = false): string {
+  const w = (html: string) => blendIf(gmailDarkFix, html);
+  const linkColor = gmailDarkFix ? GM.accent : C.accent;
   if (!b || (!b.address && !b.phone)) return "";
 
   const mapHref = b.address
@@ -330,19 +327,19 @@ function businessRows(b?: BusinessInfo): string {
     : "";
 
   const addr = b.address
-    ? `              <div style="font-family:${FONT_BODY};font-size:15px;line-height:23px;color:${C.fg};font-weight:500;">${esc(b.address)}</div>
-              <div style="padding-top:8px;"><a href="${mapHref}" style="font-family:${FONT_BODY};font-size:13px;line-height:20px;color:${C.accent};font-weight:600;letter-spacing:0.03em;">Get directions &rsaquo;</a></div>`
+    ? `              ${w(`<div style="font-family:${FONT_BODY};font-size:15px;line-height:23px;color:${C.fg};font-weight:500;">${esc(b.address)}</div>`)}
+              <div style="padding-top:8px;"><a href="${mapHref}" style="font-family:${FONT_BODY};font-size:13px;line-height:20px;color:${linkColor};font-weight:600;letter-spacing:0.03em;">Get directions &rsaquo;</a></div>`
     : "";
 
   const tel = b.phone
-    ? `              <div style="padding-top:${b.address ? "14" : "0"}px;font-family:${FONT_BODY};font-size:13px;line-height:20px;color:${C.muted};">
+    ? `              <div style="padding-top:${b.address ? "14" : "0"}px;">${w(`<div style="font-family:${FONT_BODY};font-size:13px;line-height:20px;color:${C.muted};">
                 Questions? <a href="tel:${encodeURI(b.phone)}" style="color:${C.fg};font-weight:600;">${esc(b.phone)}</a>
-              </div>`
+              </div>`)}</div>`
     : "";
 
   return `          <tr>
             <td class="px" style="padding:28px 40px 0;">
-              <div style="font-family:${FONT_BODY};font-size:11px;line-height:16px;color:${C.muted};letter-spacing:0.1em;text-transform:uppercase;padding-bottom:10px;">Where</div>
+              <div style="padding-bottom:10px;">${w(`<div style="font-family:${FONT_BODY};font-size:11px;line-height:16px;color:${C.muted};letter-spacing:0.1em;text-transform:uppercase;">Where</div>`)}</div>
 ${addr}
 ${tel}
             </td>
@@ -856,44 +853,50 @@ export function buildPromoAnnouncementHtml(
   recipient: PromoRecipient = {},
 ): string {
   const { unsubscribeUrl } = recipient;
+  // Built for gmailDarkFix: gradient backgrounds, white/gray text in
+  // gmailBlend(), colored text unwrapped in GM shades (see layout()).
+  const w = gmailBlend;
   const codeRows = codes
     .map(
       (c) => `                <tr>
-                  <td style="padding:14px 18px;border-top:1px solid ${C.border};font-family:${FONT_HEAD};font-size:18px;line-height:24px;color:${C.champagne};font-weight:600;letter-spacing:0.06em;word-break:break-all;overflow-wrap:anywhere;">${esc(c.code)}</td>
-                  <td align="right" style="padding:14px 18px;border-top:1px solid ${C.border};font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.accent};font-weight:700;white-space:nowrap;vertical-align:middle;">${esc(c.label)}${c.limit ? `<br><span style="font-size:11px;line-height:16px;color:${C.muted};font-weight:400;white-space:normal;">${esc(c.limit)}</span>` : ""}</td>
+                  <td style="padding:14px 18px;border-top:1px solid ${C.border};font-family:${FONT_HEAD};font-size:18px;line-height:24px;color:${GM.champagne};font-weight:600;letter-spacing:0.06em;word-break:break-all;overflow-wrap:anywhere;">${esc(c.code)}</td>
+                  <td align="right" style="padding:14px 18px;border-top:1px solid ${C.border};vertical-align:middle;">
+                    <div style="font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${GM.accent};font-weight:700;white-space:nowrap;">${esc(c.label)}</div>${c.limit ? `
+                    ${w(`<div style="font-family:${FONT_BODY};font-size:11px;line-height:15px;color:${C.muted};white-space:nowrap;">${esc(c.limit)}</div>`)}` : ""}
+                  </td>
                 </tr>`,
     )
     .join("\n");
 
-  const body = `
+  const body = `${headerRow()}
 
           <tr>
             <td align="center" class="px" style="padding:30px 40px 0;">
-              <div style="font-family:${FONT_HEAD};font-size:12px;line-height:16px;color:${C.accent};letter-spacing:0.18em;text-transform:uppercase;font-weight:600;">Limited chairs</div>
+              <div style="font-family:${FONT_HEAD};font-size:12px;line-height:16px;color:${GM.accent};letter-spacing:0.18em;text-transform:uppercase;font-weight:600;">Limited chairs</div>
             </td>
           </tr>
 
           <tr>
             <td align="center" class="px" style="padding:14px 40px 0;">
-              <div class="hero" style="font-family:${FONT_HEAD};font-size:34px;line-height:40px;color:${C.champagne};font-weight:600;letter-spacing:0.02em;mso-line-height-rule:exactly;">Slots are filling up</div>
-              <div style="padding-top:16px;font-family:${FONT_BODY};font-size:16px;line-height:24px;color:${C.fg};font-weight:600;">${esc(promoGreeting(recipient.firstName))}</div>
-              <div style="padding-top:6px;font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.muted};">
+              <div class="hero" style="font-family:${FONT_HEAD};font-size:34px;line-height:40px;color:${GM.champagne};font-weight:600;letter-spacing:0.02em;mso-line-height-rule:exactly;">Slots are filling up</div>
+              <div style="padding-top:16px;">${w(`<div style="font-family:${FONT_BODY};font-size:16px;line-height:24px;color:${C.fg};font-weight:600;">${esc(promoGreeting(recipient.firstName))}</div>`)}</div>
+              <div style="padding-top:6px;">${w(`<div style="font-family:${FONT_BODY};font-size:14px;line-height:22px;color:${C.muted};">
                 The calendar is getting packed. Lock in your next cut before the good times are gone &mdash; and take one of these codes with you.
-              </div>
+              </div>`)}</div>
             </td>
           </tr>
 
           <tr>
             <td class="px" style="padding:26px 40px 0;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.elevated}" style="background-color:${C.elevated};border:1px solid ${C.border};border-radius:10px;border-collapse:separate !important;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.elevated}" style="${grad(C.elevated)}border:1px solid ${C.border};border-radius:10px;border-collapse:separate !important;">
                 <tr>
-                  <td colspan="2" style="padding:14px 18px 10px;font-family:${FONT_BODY};font-size:11px;line-height:16px;color:${C.muted};letter-spacing:0.1em;text-transform:uppercase;">Your promo codes</td>
+                  <td colspan="2" style="padding:14px 18px 10px;">${w(`<div style="font-family:${FONT_BODY};font-size:11px;line-height:16px;color:${C.muted};letter-spacing:0.1em;text-transform:uppercase;">Your promo codes</div>`)}</td>
                 </tr>
 ${codeRows}
               </table>
-              <div style="padding-top:10px;font-family:${FONT_BODY};font-size:12px;line-height:19px;color:${C.muted};">
+              <div style="padding-top:10px;">${w(`<div style="font-family:${FONT_BODY};font-size:12px;line-height:19px;color:${C.muted};">
                 Enter a code on the last step of booking. One code per booking; it comes off your services, not the evening rate.
-              </div>
+              </div>`)}</div>
             </td>
           </tr>
 
@@ -901,7 +904,7 @@ ${codeRows}
             <td align="center" class="px" style="padding:28px 40px 0;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" bgcolor="${C.accent}" style="background-color:${C.accent};border-radius:999px;">
+                  <td align="center" bgcolor="${C.accent}" style="${grad(C.accent)}border-radius:999px;">
                     <a href="${SITE}/booking" style="display:inline-block;padding:14px 34px;font-family:${FONT_BODY};font-size:14px;line-height:20px;color:${C.bg};font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Book your slot</a>
                   </td>
                 </tr>
@@ -911,10 +914,10 @@ ${codeRows}
 
           <tr>
             <td class="px" style="padding:30px 40px 0;">
-${rule()}
+${rule(true)}
             </td>
           </tr>
-${businessRows(business)}
+${businessRows(business, true)}
           <tr><td style="height:36px;line-height:36px;font-size:0;">&nbsp;</td></tr>`;
 
   return layout({
@@ -1075,56 +1078,5 @@ export async function sendSignInLinkEmail(to: string, token: string): Promise<vo
     subject: "Your Pasto Hair sign-in link",
     html: buildSignInHtml(url),
     text: buildSignInText(url),
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Gmail dark-mode color calibration (scripts/send-promo-email.ts `swatch`).
-// Temporary: shows which purples/golds survive Gmail iPhone's dark mode.
-// ---------------------------------------------------------------------------
-
-export const SWATCH_PURPLES = ["#6d28d9", "#7c3aed", "#8b5cf6", "#9d6bf7", "#a678fa", "#bb86fc"];
-export const SWATCH_GOLDS = ["#8a6d3b", "#a3844f", "#b89a66", "#c9ad7e", "#d9c39c", "#e8dcc4"];
-
-export function buildGmailSwatchHtml(): string {
-  const label = (t: string) =>
-    gmailBlend(`<span style="font-family:${FONT_BODY};font-size:12px;line-height:18px;color:${C.fg};">${esc(t)}</span>`);
-  const row = (name: string, inner: string) => `          <tr>
-            <td class="px" style="padding:10px 40px 0;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
-                <td width="70" style="width:70px;vertical-align:middle;">${label(name)}</td>
-                <td style="vertical-align:middle;">${inner}</td>
-              </tr></table>
-            </td>
-          </tr>`;
-  const sample = (c: string, wrap: boolean) => {
-    const text = `<span style="font-family:${FONT_HEAD};font-size:18px;line-height:24px;color:${c};font-weight:700;letter-spacing:0.08em;">LIMITED CHAIRS · 10% OFF</span>`;
-    return wrap ? gmailBlend(text) : text;
-  };
-  const heading = (t: string) => `          <tr><td class="px" style="padding:28px 40px 4px;">${gmailBlend(`<div style="font-family:${FONT_BODY};font-size:14px;line-height:20px;color:${C.fg};font-weight:700;">${esc(t)}</div>`)}</td></tr>`;
-  const button = (name: string, textColor: string, wrapText: boolean) => {
-    const text = `<span style="font-family:${FONT_BODY};font-size:13px;line-height:18px;color:${textColor};font-weight:700;letter-spacing:0.1em;">BOOK YOUR SLOT</span>`;
-    return row(name, `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="${grad(C.accent)}border-radius:999px;padding:12px 26px;">${wrapText ? gmailBlend(text) : text}</td></tr></table>`);
-  };
-
-  const body = `${heading("1. Purples, unwrapped")}
-${SWATCH_PURPLES.map((c, i) => row(`P${i + 1}`, sample(c, false))).join("\n")}
-${heading("2. Golds, unwrapped")}
-${SWATCH_GOLDS.map((c, i) => row(`G${i + 1}`, sample(c, false))).join("\n")}
-${heading("3. Same colors, wrapped (current fix)")}
-${row("P6w", sample(SWATCH_PURPLES[5], true))}
-${row("G6w", sample(SWATCH_GOLDS[5], true))}
-${heading("4. Buttons")}
-${button("B1", C.bg, false)}
-${button("B2", C.bg, true)}
-${button("B3", "#ffffff", false)}
-          <tr><td style="padding:0 0 32px;"></td></tr>`;
-
-  return layout({
-    title: "Gmail color test",
-    preheader: "Screenshot this in the Gmail app with dark mode on.",
-    body,
-    footerNote: "Internal test email.",
-    gmailDarkFix: "per-element",
   });
 }
