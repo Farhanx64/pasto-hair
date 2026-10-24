@@ -224,7 +224,7 @@ ${opts.body}
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:600px;">
           <tr>
             <td align="center" style="padding:24px 24px 8px;font-family:${FONT_BODY};font-size:11px;line-height:18px;color:${C.muted};letter-spacing:0.04em;">
-              PASTO HAIR &nbsp;·&nbsp; NEW YORK
+              Made w Joy &nbsp;·&nbsp; pasto.hair &nbsp;·&nbsp; by Farhan
             </td>
           </tr>
           <tr>
@@ -490,7 +490,7 @@ export function buildCustomerText(data: BookingConfirmationData): string {
 
   lines.push(
     "",
-    "Pasto Hair · New York",
+    "Made w Joy · pasto.hair · by Farhan",
     "Automated message — please don't reply to this address.",
   );
 
@@ -772,7 +772,7 @@ export function buildSignInText(url: string): string {
     "",
     "Didn't ask for this? You can ignore it — nobody can sign in without this email.",
     "",
-    "Pasto Hair · New York",
+    "Made w Joy · pasto.hair · by Farhan",
     "Automated message — please don't reply to this address.",
   ].join("\n");
 }
@@ -875,6 +875,8 @@ export function buildPromoAnnouncementText(codes: PromoAnnouncementCode[], busin
     ...(business?.phone ? [business.phone] : []),
     "",
     "You're getting this because you've booked with Pasto Hair. Don't want offers like this? Reply \"unsubscribe\" and we'll take you off the list.",
+    "",
+    "Made w Joy · pasto.hair · by Farhan",
   ].join("\n");
 }
 
