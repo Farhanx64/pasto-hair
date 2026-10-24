@@ -182,7 +182,32 @@ function durationLabel(startTime: string, endTime: string): string {
  * `preheader` is the grey preview line clients show next to the subject —
  * without it they scrape the first visible text, which reads like debris.
  */
-function layout(opts: { title: string; preheader: string; body: string; footerNote?: string }): string {
+// Gmail's iPhone app ignores color-scheme and flips every color in dark mode,
+// so this dark email turns bright. Its fix (hteumeuleu.com, "Fixing Gmail's
+// dark mode issues with CSS Blend Modes"): Gmail never flips background
+// *images*, so the canvas gets a one-color gradient; then two blend layers
+// (screen, then difference) flip everything inside back. The \`u + .body\`
+// selector only matches inside Gmail, so every other app ignores it.
+// Images aren't flipped by Gmail but *are* flipped back by the blend layers, so
+// with the fix on, the logo sits in its own card top above the blend layers,
+// painted with a gradient so Gmail leaves it alone.
+// The email's body must then not include headerRow() itself.
+// Opt-in per email until it has been checked on a phone.
+const GMAIL_DARK_CSS = `
+    u + .body .gmail-blend-screen { background:#000; mix-blend-mode:screen; }
+    u + .body .gmail-blend-difference { background:#000; mix-blend-mode:difference; }`;
+
+function layout(opts: {
+  title: string;
+  preheader: string;
+  body: string;
+  footerNote?: string;
+  gmailDarkFix?: boolean;
+}): string {
+  const fix = opts.gmailDarkFix === true;
+  const canvasBg = fix
+    ? `background-color:${C.bgDeep};background-image:linear-gradient(${C.bgDeep},${C.bgDeep});`
+    : `background-color:${C.bgDeep};`;
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
@@ -205,23 +230,23 @@ function layout(opts: { title: string; preheader: string; body: string; footerNo
       .px { padding-left:24px !important; padding-right:24px !important; }
       .hero { font-size:30px !important; line-height:36px !important; }
       .stack { display:block !important; width:100% !important; text-align:left !important; }
-    }
+    }${fix ? GMAIL_DARK_CSS : ""}
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:${C.bgDeep};">
+<body class="body" style="margin:0;padding:0;${canvasBg}">
   <div style="display:none;font-size:1px;color:${C.bgDeep};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${esc(opts.preheader)}</div>
   <!-- preheader spacer: stops clients pulling body copy into the preview line -->
   <div style="display:none;font-size:1px;color:${C.bgDeep};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>
 
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.bgDeep}" style="background-color:${C.bgDeep};">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${C.bgDeep}" style="${canvasBg}">
     <tr>
-      <td align="center" style="padding:32px 12px;">
-
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:600px;background-color:${C.bg};border:1px solid ${C.border};border-radius:14px;overflow:hidden;">
+      <td align="center" style="padding:32px 12px;${fix ? canvasBg : ""}">
+${fix ? gmailSafeCardTop() : ""}
+        <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" width="600" style="margin:0 auto;width:600px;max-width:600px;background-color:${C.bg};border:1px solid ${C.border};${fix ? "border-top:0;border-radius:0 0 14px 14px;" : "border-radius:14px;"}overflow:hidden;">
 ${opts.body}
         </table>
 
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:600px;">
+        <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" width="600" style="margin:0 auto;width:600px;max-width:600px;">
           <tr>
             <td align="center" style="padding:24px 24px 8px;font-family:${FONT_BODY};font-size:11px;line-height:18px;color:${C.muted};letter-spacing:0.04em;">
               Made w Joy &nbsp;·&nbsp; pasto.hair &nbsp;·&nbsp; by Farhan
@@ -233,7 +258,7 @@ ${opts.body}
             </td>
           </tr>
         </table>
-
+${fix ? `        </div></div>\n` : ""}
       </td>
     </tr>
   </table>
@@ -242,6 +267,17 @@ ${opts.body}
 }
 
 /** Logo lockup row. */
+const grad = (c: string) => `background-color:${c};background-image:linear-gradient(${c},${c});`;
+
+/** Logo card top for the Gmail dark fix — then opens the blend layers. */
+function gmailSafeCardTop(): string {
+  return `        <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" width="600" style="margin:0 auto;width:600px;max-width:600px;${grad(C.bg)}border-radius:14px 14px 0 0;">
+${headerRow()}
+        </table>
+        <div class="gmail-blend-screen"><div class="gmail-blend-difference">
+`;
+}
+
 function headerRow(): string {
   return `          <tr>
             <td align="center" class="px" style="padding:36px 40px 0;">
@@ -821,7 +857,7 @@ export function buildPromoAnnouncementHtml(
     )
     .join("\n");
 
-  const body = `${headerRow()}
+  const body = `
 
           <tr>
             <td align="center" class="px" style="padding:30px 40px 0;">
@@ -878,6 +914,7 @@ ${businessRows(business)}
     preheader: `${promoGreeting(recipient.firstName)} Book before the calendar fills — ${codes.map((c) => `${c.code} for ${c.label}`).join(", ")}.`,
     body,
     footerNote: promoFooter(unsubscribeUrl),
+    gmailDarkFix: true,
   });
 }
 
