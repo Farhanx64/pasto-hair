@@ -11,7 +11,10 @@
  * verified in Resend — so spam complaints on promos can't drag down the
  * booking emails' domain reputation. Only `test` may fall back to EMAIL_FROM.
  *
- * Recipients are the distinct emails on bookings plus signed-up customers.
+ * Recipients are the distinct emails on bookings plus signed-up customers,
+ * minus everyone on the "Unsubscribed emails" list in the admin. Each email
+ * carries that person's own unsubscribe link (and List-Unsubscribe headers,
+ * so mail apps show their one-click unsubscribe button).
  * Each person gets their own email (never a shared To/CC list). Codes are read
  * from the admin and must be valid right now, so the email can't advertise a
  * code that won't work at checkout.
@@ -21,6 +24,7 @@ import { getPayload } from "payload";
 import { Resend } from "resend";
 
 import config from "../payload.config";
+import { unsubscribeOneClickUrl, unsubscribePageUrl } from "../src/lib/marketing/unsubscribe";
 import { checkPromoCode, describePromo, normalizePromoCode } from "../src/lib/booking/promo";
 import {
   buildPromoAnnouncementHtml,
@@ -74,10 +78,13 @@ const bookings = await payload.find({ collection: "bookings", limit: 0, paginati
 for (const b of bookings.docs) if (b.customerEmail) emails.add(b.customerEmail.trim().toLowerCase());
 const customers = await payload.find({ collection: "customers", limit: 0, pagination: false, depth: 0 });
 for (const c of customers.docs) if (c.email) emails.add(c.email.trim().toLowerCase());
-const recipients = [...emails].filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)).sort();
+const optOuts = await payload.find({ collection: "email-opt-outs", limit: 0, pagination: false, depth: 0 });
+const unsubscribed = new Set(optOuts.docs.map((o) => o.email.trim().toLowerCase()));
+const valid = [...emails].filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
+const recipients = valid.filter((e) => !unsubscribed.has(e)).sort();
 
 console.log(`\nCodes: ${codes.map((c) => `${c.code} (${c.label})`).join(", ")}`);
-console.log(`Past clients: ${recipients.length}`);
+console.log(`Past clients: ${recipients.length}${valid.length > recipients.length ? ` (${valid.length - recipients.length} unsubscribed, skipped)` : ""}`);
 
 if (mode === "count") {
   console.log("\nNothing sent (count mode).\n");
@@ -104,21 +111,24 @@ const business = {
   phone: settings.phone ?? undefined,
   email: settings.email ?? undefined,
 };
-const html = buildPromoAnnouncementHtml(codes, business);
-const text = buildPromoAnnouncementText(codes, business);
 const resend = new Resend(apiKey);
 
 const targets = mode === "test" ? [testTo!] : recipients;
 let sent = 0;
 const failed: string[] = [];
 for (const to of targets) {
+  const unsubscribeUrl = unsubscribePageUrl(to);
   const { error } = await resend.emails.send({
     from,
     to,
     replyTo,
     subject: mode === "test" ? `[TEST] ${SUBJECT}` : SUBJECT,
-    html,
-    text,
+    html: buildPromoAnnouncementHtml(codes, business, unsubscribeUrl),
+    text: buildPromoAnnouncementText(codes, business, unsubscribeUrl),
+    headers: {
+      "List-Unsubscribe": `<${unsubscribeOneClickUrl(to)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    },
   });
   if (error) {
     failed.push(to);

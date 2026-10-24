@@ -17,6 +17,7 @@ import { Bookings } from "./collections/Bookings";
 import { GalleryItems } from "./collections/GalleryItems";
 import { Testimonials } from "./collections/Testimonials";
 import { PromoCodes } from "./collections/PromoCodes";
+import { EmailOptOuts } from "./collections/EmailOptOuts";
 import { Customers } from "./collections/Customers";
 import { CustomerSessions } from "./collections/CustomerSessions";
 import { CustomerLoginTokens } from "./collections/CustomerLoginTokens";
@@ -41,7 +42,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Services, Addons, Staff, AvailabilityRules, BlockedDates, Bookings, GalleryItems, Testimonials, PromoCodes, Customers, CustomerSessions, CustomerLoginTokens],
+  collections: [Users, Media, Services, Addons, Staff, AvailabilityRules, BlockedDates, Bookings, GalleryItems, Testimonials, PromoCodes, Customers, CustomerSessions, CustomerLoginTokens, EmailOptOuts],
   globals: [BusinessSettings, BookingSettings, Theme, Legal],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || "",

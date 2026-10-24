@@ -788,11 +788,19 @@ export interface PromoAnnouncementCode {
 }
 
 // Promotional, not transactional: the footer says why they got it and how to
-// opt out (replies go to the owner — see the script's replyTo).
-const PROMO_FOOTER =
-  "You&rsquo;re getting this because you&rsquo;ve booked with Pasto Hair. Don&rsquo;t want offers like this? Reply &ldquo;unsubscribe&rdquo; and we&rsquo;ll take you off the list.";
+// opt out — the recipient's own signed link, or a reply (replies reach the owner).
+function promoFooter(unsubscribeUrl?: string): string {
+  const optOut = unsubscribeUrl
+    ? `<a href="${esc(unsubscribeUrl)}" style="color:#8a8f98;text-decoration:underline;">Unsubscribe</a> or reply &ldquo;unsubscribe&rdquo;.`
+    : "Reply &ldquo;unsubscribe&rdquo; and we&rsquo;ll take you off the list.";
+  return `You&rsquo;re getting this because you&rsquo;ve booked with Pasto Hair. Don&rsquo;t want offers like this? ${optOut}`;
+}
 
-export function buildPromoAnnouncementHtml(codes: PromoAnnouncementCode[], business?: BusinessInfo): string {
+export function buildPromoAnnouncementHtml(
+  codes: PromoAnnouncementCode[],
+  business?: BusinessInfo,
+  unsubscribeUrl?: string,
+): string {
   const codeRows = codes
     .map(
       (c) => `                <tr>
@@ -857,11 +865,15 @@ ${businessRows(business)}
     title: "Slots are filling up — Pasto Hair",
     preheader: `Book before the calendar fills — ${codes.map((c) => `${c.code} for ${c.label}`).join(", ")}.`,
     body,
-    footerNote: PROMO_FOOTER,
+    footerNote: promoFooter(unsubscribeUrl),
   });
 }
 
-export function buildPromoAnnouncementText(codes: PromoAnnouncementCode[], business?: BusinessInfo): string {
+export function buildPromoAnnouncementText(
+  codes: PromoAnnouncementCode[],
+  business?: BusinessInfo,
+  unsubscribeUrl?: string,
+): string {
   return [
     "SLOTS ARE FILLING UP — PASTO HAIR",
     "",
@@ -876,6 +888,7 @@ export function buildPromoAnnouncementText(codes: PromoAnnouncementCode[], busin
     ...(business?.phone ? [business.phone] : []),
     "",
     "You're getting this because you've booked with Pasto Hair. Don't want offers like this? Reply \"unsubscribe\" and we'll take you off the list.",
+    ...(unsubscribeUrl ? [`Or unsubscribe here: ${unsubscribeUrl}`] : []),
     "",
     "Made w Joy · pasto.hair · by Farhan",
   ].join("\n");
